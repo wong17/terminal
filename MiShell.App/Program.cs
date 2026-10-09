@@ -13,6 +13,9 @@ using MiShell.UI.Prompt;
 using MiShell.UI.Rendering;
 using MiShell.UI.Themes;
 
+Console.InputEncoding = System.Text.Encoding.UTF8;
+Console.OutputEncoding = System.Text.Encoding.UTF8;
+
 var dataOverride = Environment.GetEnvironmentVariable("MISHELL_DATA_DIR");
 var dataDirectory = string.IsNullOrWhiteSpace(dataOverride)
     ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MiShell")

@@ -14,13 +14,20 @@ public sealed class ThemeCommand(IOutputRenderer renderer, ThemeManager themeMan
 
     public Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
     {
+        if (arguments.Length > 1)
+        {
+            renderer.WriteError($"Uso: {Usage}");
+            return Task.FromResult(CommandResult.Failure);
+        }
         if (arguments.Length == 0 || arguments[0] == "list")
         {
             renderer.RenderTable(
                 "Temas disponibles",
-                ["Tema", "Estado"],
+                ["Tema", "Uso recomendado", "Estado"],
                 ThemeManager.Themes.Keys.Select(name => (string[])
-                    [name, name == themeManager.Current.Name ? "● activo" : string.Empty]));
+                    [name, name switch { "contrast" => "Fondo oscuro; texto claro", "paper" => "Fondo claro; texto oscuro",
+                        "plain" => "Sin color ni gráficos", _ => "Fondo oscuro" },
+                        name == themeManager.Current.Name ? "activo" : string.Empty]));
             return Task.FromResult(CommandResult.Ok);
         }
 
@@ -57,7 +64,7 @@ public sealed class SetCommand(IOutputRenderer renderer, IShellEnvironment envir
         }
 
         var parts = arguments[0].Split('=', 2);
-        if (parts.Length != 2)
+        if (arguments.Length != 1 || parts.Length != 2 || string.IsNullOrWhiteSpace(parts[0]))
         {
             renderer.WriteError("Formato esperado: set NOMBRE=valor");
             return Task.FromResult(CommandResult.Failure);

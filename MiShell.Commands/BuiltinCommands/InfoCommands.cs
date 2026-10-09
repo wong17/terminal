@@ -37,20 +37,73 @@ public sealed class HelpCommand(IOutputRenderer renderer, IServiceProvider servi
 {
     public string Name => "help";
 
-    public string Description => "Muestra los comandos disponibles.";
+    public string Description => "Muestra comandos, ayuda específica y sintaxis.";
+    public string Usage => "help [comando | syntax]";
+
+    private static readonly Dictionary<string, (string Detail, string Example)> Details = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["ls"] = ("-l/--long añade tamaño en bytes y última modificación. Los directorios no calculan tamaño recursivo.", "ls -l ."),
+        ["dir"] = ("Alias de ls. -l/--long añade tamaño en bytes y última modificación.", "dir -l ."),
+        ["ps"] = ("Orden predeterminado: RAM descendente. CPU son segundos acumulados; no porcentaje instantáneo. Se omiten procesos protegidos o que terminaron.", "ps 10 --name dotnet --sort cpu"),
+        ["kill"] = ("%1 identifica un job; un número sin % es un PID. Un job termina toda su tubería.", "kill %1"),
+        ["fg"] = ("Espera todos los procesos y la copia de flujos del job. Devuelve el código del último proceso. Ctrl+C termina ese trabajo.", "fg 1"),
+        ["cat"] = ("Lee un archivo o stdin. La redirección de entrada está disponible para cat y type.", "cat < saludo.txt"),
+        ["type"] = ("Alias de cat; lee un archivo o stdin.", "type saludo.txt"),
+        ["theme"] = ("contrast: fondo oscuro; paper: fondo claro; plain: sin color. La elección se guarda para próximas sesiones.", "theme contrast"),
+        ["source"] = ("Ejecuta cada línea en la sesión actual. Ignora líneas vacías y comentarios #. Continúa tras errores, informa archivo/línea y devuelve fallo si hubo alguno.", "source demo.mish"),
+        ["set"] = ("Define una variable de entorno para esta sesión y sus procesos hijos. Usa comillas para valores con espacios.", "set SALUDO=\"Hola mundo\""),
+        ["cd"] = ("Sin argumento va al directorio personal. Acepta .., ~ y rutas entre comillas.", "cd \"C:\\Program Files\""),
+        ["exit"] = ("Sale del shell con un código entre 0 y 255. El código predeterminado es 0.", "exit 0"),
+        ["sysinfo"] = ("Muestra uso global de CPU, RAM y de la unidad actual. MiB/GiB son unidades binarias. Requiere contadores y WMI de Windows.", "sysinfo"),
+        ["history"] = ("Muestra las últimas órdenes guardadas en el perfil local. Arriba/abajo permiten recuperarlas.", "history"),
+        ["which"] = ("Busca programas externos en PATH. Los internos se consultan con help.", "which cmd.exe"),
+    };
 
     public Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
     {
         // Resolución diferida: pedir IEnumerable<IBuiltinCommand> en el constructor
         // crearía una dependencia circular (help es él mismo un comando).
         var builtins = (IEnumerable<IBuiltinCommand>?)services.GetService(typeof(IEnumerable<IBuiltinCommand>)) ?? [];
+        if (arguments.Length > 1)
+        {
+            renderer.WriteError($"Uso: {Usage}");
+            return Task.FromResult(CommandResult.Failure);
+        }
+        if (arguments.Length == 1)
+        {
+            var name = arguments[0];
+            if (name.Equals("syntax", StringComparison.OrdinalIgnoreCase))
+            {
+                renderer.WriteLine("Comillas dobles expanden $VARIABLE; comillas simples conservan texto literal.");
+                renderer.WriteLine("> reemplaza salida; >> añade; < lee entrada. Una entrada y una salida por comando.");
+                renderer.WriteLine("| conecta programas externos; & inicia una tubería externa en segundo plano.");
+                renderer.WriteLine("&& ejecuta si el anterior termina con 0; || ejecuta si termina con error.");
+                renderer.WriteLine("Los internos admiten > y >>; cat/type también <. No participan en pipes ni en &.");
+                renderer.WriteLine("Ejemplo: cmd.exe /c echo Hola | findstr.exe Hola > saludo.txt");
+                return Task.FromResult(CommandResult.Ok);
+            }
+            var command = builtins.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (command is null)
+            {
+                renderer.WriteError($"No hay ayuda interna para '{name}'. Consulta help o la ayuda del programa externo.");
+                return Task.FromResult(CommandResult.Failure);
+            }
+            renderer.WriteLine($"{command.Name}: {command.Description}");
+            renderer.WriteLine($"Uso: {command.Usage}");
+            if (Details.TryGetValue(command.Name, out var detail))
+            {
+                renderer.WriteLine(detail.Detail);
+                renderer.WriteLine($"Ejemplo: {detail.Example}");
+            }
+            return Task.FromResult(CommandResult.Ok);
+        }
         renderer.RenderTable(
             "Comandos internos",
             ["Comando", "Descripción", "Uso"],
             builtins
                 .OrderBy(b => b.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(b => (string[])[b.Name, b.Description, b.Usage]));
-        renderer.WriteInfo("Los demás comandos se buscan como programas externos en el PATH.");
+        renderer.WriteInfo("Usa help <comando> o help syntax para más detalle. Los programas externos se buscan en PATH.");
         return Task.FromResult(CommandResult.Ok);
     }
 }

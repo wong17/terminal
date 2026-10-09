@@ -21,31 +21,48 @@ public sealed class ThemeManager
 {
     public static IReadOnlyDictionary<string, ShellTheme> Themes { get; } = new Dictionary<string, ShellTheme>(StringComparer.OrdinalIgnoreCase)
     {
+        ["contrast"] = new("contrast",
+            ConsoleColor.Cyan, ConsoleColor.Cyan, ConsoleColor.White,
+            ConsoleColor.Green, ConsoleColor.Red, ConsoleColor.Yellow,
+            ConsoleColor.Cyan, ConsoleColor.Gray, "8be9fd"),
+        ["paper"] = new("paper",
+            ConsoleColor.DarkBlue, ConsoleColor.DarkBlue, ConsoleColor.Black,
+            ConsoleColor.DarkGreen, ConsoleColor.DarkRed, ConsoleColor.DarkBlue,
+            ConsoleColor.DarkBlue, ConsoleColor.DarkGray, "1e40af"),
+        ["plain"] = new("plain",
+            ConsoleColor.Gray, ConsoleColor.Gray, ConsoleColor.Gray,
+            ConsoleColor.Gray, ConsoleColor.Gray, ConsoleColor.Gray,
+            ConsoleColor.Gray, ConsoleColor.Gray, "cccccc"),
         ["dracula"] = new("dracula",
             ConsoleColor.Magenta, ConsoleColor.Cyan, ConsoleColor.Cyan,
             ConsoleColor.Green, ConsoleColor.Red, ConsoleColor.Yellow,
-            ConsoleColor.Magenta, ConsoleColor.DarkGray, "bd93f9"),
+            ConsoleColor.Magenta, ConsoleColor.Gray, "bd93f9"),
         ["synthwave"] = new("synthwave",
             ConsoleColor.DarkMagenta, ConsoleColor.Magenta, ConsoleColor.Yellow,
             ConsoleColor.Green, ConsoleColor.Red, ConsoleColor.Cyan,
-            ConsoleColor.Yellow, ConsoleColor.DarkGray, "ffcc00"),
+            ConsoleColor.Yellow, ConsoleColor.Gray, "ffcc00"),
         ["crt"] = new("crt",
             ConsoleColor.Green, ConsoleColor.Green, ConsoleColor.Green,
-            ConsoleColor.Green, ConsoleColor.DarkRed, ConsoleColor.Green,
-            ConsoleColor.White, ConsoleColor.DarkGreen, "33ff33"),
+            ConsoleColor.Green, ConsoleColor.Red, ConsoleColor.Green,
+            ConsoleColor.White, ConsoleColor.Gray, "33ff33"),
         ["minimal"] = new("minimal",
             ConsoleColor.White, ConsoleColor.Gray, ConsoleColor.Gray,
             ConsoleColor.White, ConsoleColor.Red, ConsoleColor.Gray,
-            ConsoleColor.White, ConsoleColor.DarkGray, "cccccc"),
+            ConsoleColor.White, ConsoleColor.Gray, "cccccc"),
     };
 
-    public ShellTheme Current { get; private set; } = Themes["dracula"];
+    public ShellTheme Current { get; private set; } = Themes["contrast"];
 
     public bool TrySelect(string name, out ShellTheme theme)
     {
-        if (!Themes.TryGetValue(name, out theme!)) return false;
+        if (!Themes.TryGetValue(name, out var selected))
+        {
+            theme = Current;
+            return false;
+        }
 
-        Current = theme;
+        theme = selected;
+        Current = selected;
         return true;
     }
 
@@ -53,7 +70,7 @@ public sealed class ThemeManager
     {
         if (string.IsNullOrEmpty(name) || !TrySelect(name, out _))
         {
-            TrySelect("dracula", out _);
+            TrySelect("contrast", out _);
         }
     }
 }

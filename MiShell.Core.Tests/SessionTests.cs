@@ -28,10 +28,45 @@ public sealed class SessionTests
         Assert.DoesNotContain("Error interno", stderr);
     }
 
-    private static async Task<(int Code, string Stdout, string Stderr)> RunSession(string input)
+
+    [Fact]
+    public async Task HelpAndProcessDetailsRemainReadableInRedirectedOutput()
+    {
+        var (code, stdout, stderr) = await RunSession("help ps\nhelp syntax\nps --name missing_mishell_process_name\nexit\n");
+        Assert.Equal(0, code);
+        Assert.Contains("--sort ram|cpu|pid", stdout);
+        Assert.Contains("comillas simples", stdout);
+        Assert.Contains("No hay procesos", stdout);
+        Assert.Equal("", stderr);
+    }
+
+    [Fact]
+    public async Task SourceReportsLineAndPreservesFailureAfterRecovery()
+    {
+        var (code, stdout, stderr) = await RunSession("source script.mish || echo script-failed\nexit\n",
+            "echo broken |\necho recovered\n");
+        Assert.Equal(0, code);
+        Assert.Contains("script.mish:1:", stderr);
+        Assert.Contains("recovered", stdout);
+        Assert.Contains("script-failed", stdout);
+    }
+
+    [Fact]
+    public async Task RecursiveSourceProducesErrorWithoutTerminatingTheSession()
+    {
+        var (code, stdout, stderr) = await RunSession("source script.mish || echo recursion-detected\nexit\n",
+            "source script.mish\n");
+        Assert.Equal(0, code);
+        Assert.Contains("Script recursivo", stderr);
+        Assert.Contains("recursion-detected", stdout);
+        Assert.DoesNotContain("Error interno", stderr);
+    }
+
+    private static async Task<(int Code, string Stdout, string Stderr)> RunSession(string input, string? script = null)
     {
         var directory = Path.Combine(Path.GetTempPath(), "MiShell.SessionTests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
+        if (script is not null) await File.WriteAllTextAsync(Path.Combine(directory, "script.mish"), script);
         var start = new ProcessStartInfo("dotnet")
         {
             UseShellExecute = false,

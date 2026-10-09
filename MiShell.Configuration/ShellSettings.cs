@@ -5,7 +5,7 @@ namespace MiShell.Configuration;
 /// <summary>Ajustes persistidos del shell entre sesiones.</summary>
 public sealed class ShellSettings
 {
-    public string Theme { get; set; } = "dracula";
+    public string Theme { get; set; } = "contrast";
 
     /// <summary>Muestra la hora en la primera línea del prompt.</summary>
     public bool PromptShowTime { get; set; } = true;

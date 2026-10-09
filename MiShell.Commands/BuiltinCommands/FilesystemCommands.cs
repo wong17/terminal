@@ -16,51 +16,46 @@ public sealed class ClearCommand(IOutputRenderer renderer, string name) : IBuilt
     }
 }
 
-/// <summary>Lista archivos y directorios sin depender de comandos del sistema anfitrión.</summary>
+
+/// <summary>Lista archivos y directorios, con detalle opcional.</summary>
 public sealed class ListDirectoryCommand(IOutputRenderer renderer, string name) : IBuiltinCommand
 {
     public string Name { get; } = name;
-
-    public string Description => "Lista archivos y directorios.";
-
-    public string Usage => $"{Name} [ruta]";
+    public string Description => "Lista archivos; -l añade tamaño y fecha.";
+    public string Usage => $"{Name} [-l | --long] [ruta]";
 
     public Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
     {
-        var requestedPath = arguments.Length == 0 ? "." : arguments[0];
+        var detailed = arguments.Contains("-l") || arguments.Contains("--long");
+        var paths = arguments.Where(a => a is not "-l" and not "--long").ToArray();
+        if (paths.Length > 1 || paths.Any(p => p.StartsWith('-')))
+        {
+            renderer.WriteError($"Uso: {Usage}");
+            return Task.FromResult(CommandResult.Failure);
+        }
+        var requestedPath = paths.Length == 0 ? "." : paths[0];
         var fullPath = Path.GetFullPath(requestedPath, context.WorkingDirectory);
-
         try
         {
-            var rows = Directory.EnumerateFileSystemEntries(fullPath)
-                .Select(entry =>
-                {
-                    var isDirectory = Directory.Exists(entry);
-                    var displayName = Path.GetFileName(entry);
-                    return (string[])
-                    [
-                        isDirectory ? "DIR" : "FILE",
-                        string.IsNullOrEmpty(displayName) ? entry : displayName,
-                    ];
-                })
-                .OrderBy(row => row[0], StringComparer.Ordinal)
-                .ThenBy(row => row[1], StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            renderer.RenderTable($"Contenido de {fullPath}", ["Tipo", "Nombre"], rows);
+            var entries = new DirectoryInfo(fullPath).EnumerateFileSystemInfos()
+                .OrderBy(e => e is DirectoryInfo ? 0 : 1)
+                .ThenBy(e => e.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+            var rows = entries.Select(entry =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var type = entry is DirectoryInfo ? "DIR" : "FILE";
+                return detailed
+                    ? (string[])[type, entry.Name,
+                        entry is FileInfo file ? file.Length.ToString("N0", System.Globalization.CultureInfo.CurrentCulture) : "-",
+                        entry.LastWriteTime.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture)]
+                    : [type, entry.Name];
+            }).ToArray();
+            renderer.RenderTable($"Contenido de {fullPath}",
+                detailed ? ["Tipo", "Nombre", "Tamaño (bytes)", "Modificado"] : ["Tipo", "Nombre"], rows);
+            renderer.WriteInfo($"{entries.Count(e => e is DirectoryInfo)} directorios; {entries.Count(e => e is FileInfo)} archivos.");
             return Task.FromResult(CommandResult.Ok);
         }
-        catch (DirectoryNotFoundException)
-        {
-            renderer.WriteError($"El directorio no existe: '{requestedPath}'");
-            return Task.FromResult(CommandResult.Failure);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            renderer.WriteError($"Sin permisos para leer: '{requestedPath}'");
-            return Task.FromResult(CommandResult.Failure);
-        }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is DirectoryNotFoundException or UnauthorizedAccessException or IOException)
         {
             renderer.WriteError($"No se pudo listar '{requestedPath}': {ex.Message}");
             return Task.FromResult(CommandResult.Failure);

@@ -188,5 +188,37 @@ public sealed class ExecutionTests
         await using var f = new ExecutionFixture();
         Assert.Equal(1, await f.Run("echo hello | findstr.exe hello"));
     }
-}
 
+    [Fact]
+    public async Task DetailedListingIncludesSizeAndModificationDate()
+    {
+        await using var f = new ExecutionFixture();
+        await File.WriteAllTextAsync(f.FilePath("sample.txt"), "abc");
+        Assert.Equal(0, await f.Run("ls -l > listing.txt"));
+        var output = await File.ReadAllTextAsync(f.FilePath("listing.txt"));
+        Assert.Contains("Tamaño (bytes)", output);
+        Assert.Contains("FILE\tsample.txt\t3\t", output);
+        Assert.Contains("Modificado", output);
+    }
+
+    [Fact]
+    public async Task ProcessFilterWithoutMatchesProducesEmptyState()
+    {
+        await using var f = new ExecutionFixture();
+        var result = await new PsCommand(f.Renderer).ExecuteAsync(["--name", "missing_mishell_process_name"], f.State, CancellationToken.None);
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("No hay procesos", f.Output.ToString());
+    }
+
+    [Theory]
+    [InlineData("--unknown")]
+    [InlineData("-3")]
+    [InlineData("--sort", "unsupported")]
+    [InlineData("--name")]
+    public async Task InvalidProcessOptionsAreRejected(params string[] arguments)
+    {
+        await using var f = new ExecutionFixture();
+        var result = await new PsCommand(f.Renderer).ExecuteAsync(arguments, f.State, CancellationToken.None);
+        Assert.Equal(1, result.ExitCode);
+    }
+}

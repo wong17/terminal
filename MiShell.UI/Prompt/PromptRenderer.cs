@@ -1,3 +1,4 @@
+using MiShell.UI.Rendering;
 using MiShell.UI.Themes;
 using System.Globalization;
 using System.Text;
@@ -29,10 +30,13 @@ public sealed partial class PromptRenderer(ThemeManager themeManager, IconProvid
         var symbolColor = succeeded ? theme.PromptSymbol : theme.ErrorColor;
 
         var line1 = ComposeInfoLine(theme, lastExitCode, duration);
-        var line2 = $"{Ansi(theme.Path)}{_icons.Folder}{ShortenPath(Environment.CurrentDirectory)}{Reset}";
-        var line3 = $"{Ansi(symbolColor)}{_icons.Chevron}{Reset} ";
+        var line2 = $"{AnsiColors.For(theme.Path, theme.Name != "plain")}{_icons.Folder}{ShortenPath(Environment.CurrentDirectory)}{Reset}";
+        var line3 = $"{AnsiColors.For(symbolColor, theme.Name != "plain")}{_icons.Chevron}{Reset} ";
 
-        return $"{line1}\n{line2}\n{line3}";
+        var prompt = $"{line1}\n{line2}\n{line3}";
+        return !AnsiColors.Enabled || theme.Name == "plain"
+            ? AnsiSequenceRegex().Replace(prompt, string.Empty)
+            : prompt;
     }
 
     private string ComposeInfoLine(ShellTheme theme, int lastExitCode, TimeSpan? duration)
@@ -40,13 +44,13 @@ public sealed partial class PromptRenderer(ThemeManager themeManager, IconProvid
         var left = new StringBuilder();
         if (showTime)
         {
-            left.Append(Ansi(theme.Accent))
+            left.Append(AnsiColors.For(theme.Accent, theme.Name != "plain"))
                 .Append(DateTime.Now.ToString("HH:mm", CultureInfo.InvariantCulture))
                 .Append(' ')
                 .Append(Reset);
         }
 
-        left.Append(Ansi(theme.Muted))
+        left.Append(AnsiColors.For(theme.Muted, theme.Name != "plain"))
             .Append(Environment.UserName)
             .Append('@')
             .Append(Environment.MachineName)
@@ -59,9 +63,9 @@ public sealed partial class PromptRenderer(ThemeManager themeManager, IconProvid
     /// <summary>Insignia derecha: código de salida en rojo si falló, o duración si fue lento.</summary>
     private static string ResultBadge(ShellTheme theme, int lastExitCode, TimeSpan? duration) =>
         lastExitCode != 0
-            ? $"{Ansi(theme.ErrorColor)}✗ código {lastExitCode.ToString(CultureInfo.InvariantCulture)}{Reset}"
+            ? $"{AnsiColors.For(theme.ErrorColor, theme.Name != "plain")}✗ código {lastExitCode.ToString(CultureInfo.InvariantCulture)}{Reset}"
             : duration is { TotalMilliseconds: >= SlowCommandThresholdMs }
-                ? $"{Ansi(theme.Success)}✓ {duration.Value.TotalSeconds.ToString("F1", CultureInfo.InvariantCulture)}s{Reset}"
+                ? $"{AnsiColors.For(theme.Success, theme.Name != "plain")}✓ {duration.Value.TotalSeconds.ToString("F1", CultureInfo.InvariantCulture)}s{Reset}"
                 : string.Empty;
 
     /// <summary>Rellena con espacios para llevar la insignia al borde derecho de la ventana.</summary>
@@ -111,27 +115,11 @@ public sealed partial class PromptRenderer(ThemeManager themeManager, IconProvid
     public static string ShortenPath(string path)
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        return path.StartsWith(home, StringComparison.OrdinalIgnoreCase)
+        return home.Length > 0 && (path.Equals(home, StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith(home + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
             ? "~" + path[home.Length..].Replace('\\', '/')
             : path.Replace('\\', '/');
     }
-
-    private static string Ansi(ConsoleColor color) => color switch
-    {
-        ConsoleColor.Red => "\e[31m",
-        ConsoleColor.Green => "\e[32m",
-        ConsoleColor.Yellow => "\e[33m",
-        ConsoleColor.Blue => "\e[34m",
-        ConsoleColor.Magenta => "\e[35m",
-        ConsoleColor.Cyan => "\e[36m",
-        ConsoleColor.White => "\e[37m",
-        ConsoleColor.DarkGray => "\e[90m",
-        ConsoleColor.DarkRed => "\e[31m",
-        ConsoleColor.DarkGreen => "\e[32m",
-        ConsoleColor.DarkMagenta => "\e[35m",
-        ConsoleColor.DarkCyan => "\e[36m",
-        _ => string.Empty,
-    };
 
     /// <summary>Aproximación de East Asian Width para los rangos que importan aquí (emoji).</summary>
     private static bool IsWide(int codePoint) =>

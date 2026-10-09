@@ -48,7 +48,7 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
         public void Dispose() => restore();
     }
 
-    private bool IsPlain => Console.IsOutputRedirected || _redirectDepth > 0;
+    private bool IsPlain => !AnsiColors.Enabled || themeManager.Current.Name == "plain" || _redirectDepth > 0;
 
     public void Write(string text, ConsoleColor? color = null) => _writer.Write(IsPlain ? text : Format(text, color));
 
@@ -66,7 +66,7 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
         // En scripts o pruebas con stdout redirigido no existe una consola
         // interactiva que limpiar; el comando sigue siendo válido y no debe
         // abortar la sesión por un handle no asociado a una terminal.
-        if (Console.IsOutputRedirected)
+        if (Console.IsOutputRedirected || _redirectDepth > 0)
         {
             return;
         }
@@ -102,8 +102,8 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
         var info = Markup.Escape(
             $"{PromptRenderer.ShortenPath(Environment.CurrentDirectory)} · {Environment.UserName}@{Environment.MachineName}" +
             $" · {DateTime.Now:HH:mm} · tema {theme.Name}");
-        _console.MarkupLine($"[dim]{info}[/]");
-        _console.MarkupLine("[dim]Escribe [bold]help[/] para ver todos los comandos[/]");
+        _console.MarkupLine($"{info}");
+        _console.MarkupLine("Escribe [bold]help[/] para ver todos los comandos");
         _console.WriteLine();
     }
 
@@ -239,6 +239,14 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
     {
         var theme = themeManager.Current;
         var processInfos = processes.ToList();
+        if (processInfos.Count == 0) { WriteInfo("No hay procesos accesibles que coincidan."); return; }
+        if (IsPlain)
+        {
+            RenderTable("Procesos", ["PID", "Nombre", "CPU (s acumulados)", "RAM (MiB)"],
+                processInfos.Select(p => (string[])[p.Pid.ToString(Invariant), p.Name,
+                    p.CpuSeconds.ToString("F1", Invariant), p.WorkingSetMb.ToString("F1", Invariant)]));
+            return;
+        }
         var maxRam = Math.Max(1, processInfos.Max(p => p.WorkingSetMb));
 
         var table = new Table()
@@ -248,13 +256,13 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
             .AddColumn(new TableColumn("PID").RightAligned())
             .AddColumn("Nombre")
             .AddColumn(new TableColumn("CPU (s)").RightAligned())
-            .AddColumn(new TableColumn("RAM (MB)").RightAligned())
+            .AddColumn(new TableColumn("RAM (MiB)").RightAligned())
             .AddColumn("Uso de memoria");
 
         foreach (var p in processInfos)
         {
             var ratio = p.WorkingSetMb / maxRam;
-            var barColor = ratio > 0.66 ? "red" : ratio > 0.33 ? "yellow" : "green";
+            var barColor = $"#{theme.AccentHex}";
             table.AddRow(
                 p.Pid.ToString(Invariant),
                 Markup.Escape(p.Name),
@@ -268,9 +276,15 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
 
     public void RenderBarChart(string title, IEnumerable<(string Label, double Value, string ColorHint)> items, string valueSuffix)
     {
+        if (IsPlain)
+        {
+            RenderTable(title, ["Proceso", $"Memoria ({valueSuffix})"],
+                items.Select(i => (string[])[i.Label, i.Value.ToString("F1", Invariant)]));
+            return;
+        }
         var chart = new BarChart()
             .Width(60)
-            .Label($"[bold]{Markup.Escape(title)}[/]")
+            .Label($"[bold]{Markup.Escape(title)} ({Markup.Escape(valueSuffix)})[/]")
             .CenterLabel();
 
         foreach (var (label, value, colorHint) in items)
@@ -278,7 +292,6 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
             chart.AddItem(Markup.Escape(Truncate(label, 28)), value, HexColor(colorHint));
         }
 
-        _ = valueSuffix;
         _console.Write(chart);
     }
 
@@ -286,24 +299,36 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
     {
         var theme = themeManager.Current;
         var accent = theme.AccentHex;
+        if (IsPlain)
+        {
+            RenderTable("Sistema", ["Recurso", "Uso"],
+            [
+                ["CPU", $"{usage.CpuPercent:F1}%"],
+                ["RAM (MiB)", $"{usage.RamUsedMb:F0} / {usage.RamTotalMb:F0}"],
+                ["RAM libre (MiB)", $"{usage.RamTotalMb - usage.RamUsedMb:F0}"],
+                ["Disco (GiB)", $"{usage.DiskUsedGb:F1} / {usage.DiskTotalGb:F1}"],
+                ["Disco libre (GiB)", $"{usage.DiskTotalGb - usage.DiskUsedGb:F1}"],
+            ]);
+            return;
+        }
 
         var grid = new Grid().Expand();
         _ = grid.AddColumn();
         _ = grid.AddColumn();
 
         _ = grid.AddRow(
-            new Markup($"[bold #{accent}]MiShell[/] [dim]en[/] [bold]{Markup.Escape(Environment.MachineName)}[/]"),
-            new Markup($"[dim]{DateTime.Now:HH:mm}[/]"));
+            new Markup($"[bold #{accent}]MiShell[/] en [bold]{Markup.Escape(Environment.MachineName)}[/]"),
+            new Markup($"{DateTime.Now:HH:mm}"));
         _ = grid.AddRow(
-            new Markup($"[dim]OS[/] {Markup.Escape(Environment.OSVersion.VersionString)}"),
+            new Markup($"OS {Markup.Escape(Environment.OSVersion.VersionString)}"),
             new Text(string.Empty));
-        _ = grid.AddRow(new Markup($"[dim]Usuario[/] {Markup.Escape(Environment.UserName)}"), new Text(string.Empty));
+        _ = grid.AddRow(new Markup($"Usuario {Markup.Escape(Environment.UserName)}"), new Text(string.Empty));
         _ = grid.AddRow(new Text(string.Empty), new Text(string.Empty));
         _ = grid.AddRow(new Markup("CPU"), new Markup(BuildRatioBar(usage.CpuPercent / 100)));
         _ = grid.AddRow(new Markup("RAM"), new Markup(BuildRatioBar(usage.RamUsedMb / Math.Max(1, usage.RamTotalMb))));
         _ = grid.AddRow(new Markup("Disco"), new Markup(BuildRatioBar(usage.DiskUsedGb / Math.Max(1, usage.DiskTotalGb))));
         _ = grid.AddRow(
-            new Markup($"[dim]{usage.RamUsedMb.ToString("F0", Invariant)} / {usage.RamTotalMb.ToString("F0", Invariant)} MB · {usage.DiskUsedGb.ToString("F1", Invariant)} / {usage.DiskTotalGb.ToString("F1", Invariant)} GB[/]"),
+            new Markup($"{usage.RamUsedMb.ToString("F0", Invariant)} / {usage.RamTotalMb.ToString("F0", Invariant)} MiB · {usage.DiskUsedGb.ToString("F1", Invariant)} / {usage.DiskTotalGb.ToString("F1", Invariant)} GiB"),
             new Text(string.Empty));
 
         var panel = new Panel(grid)
@@ -355,8 +380,9 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
     private static string Truncate(string text, int maxLength) =>
         text.Length <= maxLength ? text : text[..(maxLength - 1)] + "…";
 
-    private static string Format(string text, ConsoleColor? color) =>
-        color is null ? text : Ansi(color.Value) + text + "\e[0m";
+    private string Format(string text, ConsoleColor? color) =>
+        color is null || !AnsiColors.Enabled || themeManager.Current.Name == "plain"
+            ? text : AnsiColors.For(color.Value) + text + "\e[0m";
 
     private static Color HexColor(string hexOrName)
     {
@@ -380,16 +406,4 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
         };
     }
 
-    private static string Ansi(ConsoleColor color) => color switch
-    {
-        ConsoleColor.Red or ConsoleColor.DarkRed => "\e[31m",
-        ConsoleColor.Green or ConsoleColor.DarkGreen => "\e[32m",
-        ConsoleColor.Yellow => "\e[33m",
-        ConsoleColor.Blue => "\e[34m",
-        ConsoleColor.Magenta or ConsoleColor.DarkMagenta => "\e[35m",
-        ConsoleColor.Cyan or ConsoleColor.DarkCyan => "\e[36m",
-        ConsoleColor.White => "\e[37m",
-        ConsoleColor.Gray or ConsoleColor.DarkGray => "\e[90m",
-        _ => string.Empty,
-    };
 }
