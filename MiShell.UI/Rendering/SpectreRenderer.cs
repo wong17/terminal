@@ -16,13 +16,46 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
     /// <summary>Espera antes de mostrar el indicador: comandos rápidos nunca lo ven.</summary>
     private const int SpinnerDelayMs = 400;
 
+    private IAnsiConsole _console = AnsiConsole.Console;
+    private TextWriter _writer = Console.Out;
+    private int _redirectDepth;
+
     public IThemePalette Theme => themeManager.Current;
 
-    public void Write(string text, ConsoleColor? color = null) => Console.Write(Format(text, color));
+    public IDisposable RedirectOutput(TextWriter writer)
+    {
+        var previousConsole = _console;
+        var previousWriter = _writer;
+        _console = AnsiConsole.Create(new AnsiConsoleSettings
+        {
+            Out = new AnsiConsoleOutput(writer),
+            Ansi = AnsiSupport.No,
+            ColorSystem = ColorSystemSupport.NoColors,
+            Interactive = InteractionSupport.No,
+        });
+        _writer = writer;
+        _redirectDepth++;
+        return new OutputScope(() =>
+        {
+            _console = previousConsole;
+            _writer = previousWriter;
+            _redirectDepth--;
+        });
+    }
 
-    public void WriteLine(string text = "", ConsoleColor? color = null) => Console.WriteLine(Format(text, color));
+    private sealed class OutputScope(Action restore) : IDisposable
+    {
+        public void Dispose() => restore();
+    }
 
-    public void WriteError(string message) => WriteLine($"✗ {message}", themeManager.Current.ErrorColor);
+    private bool IsPlain => Console.IsOutputRedirected || _redirectDepth > 0;
+
+    public void Write(string text, ConsoleColor? color = null) => _writer.Write(IsPlain ? text : Format(text, color));
+
+    public void WriteLine(string text = "", ConsoleColor? color = null) => _writer.WriteLine(IsPlain ? text : Format(text, color));
+
+    public void WriteError(string message) => Console.Error.WriteLine(
+        Console.IsErrorRedirected ? $"Error: {message}" : Format($"✗ {message}", themeManager.Current.ErrorColor));
 
     public void WriteSuccess(string message) => WriteLine($"✓ {message}", themeManager.Current.Success);
 
@@ -50,27 +83,28 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
 
     public void RenderBanner()
     {
+        if (IsPlain) return;
         var theme = themeManager.Current;
         var accent = HexColor(theme.AccentHex);
 
-        AnsiConsole.Write(new FigletText("MiShell").Centered().Color(accent));
+        _console.Write(new FigletText("MiShell").Centered().Color(accent));
         if (Console.IsOutputRedirected)
         {
             // Sin consola interactiva no tiene sentido animar: divisor estático.
-            AnsiConsole.MarkupLine(DividerMarkup(theme.AccentHex));
+            _console.MarkupLine(DividerMarkup(theme.AccentHex));
         }
         else
         {
             AnimateDivider(theme.AccentHex);
-            AnsiConsole.WriteLine();
+            _console.WriteLine();
         }
 
         var info = Markup.Escape(
             $"{PromptRenderer.ShortenPath(Environment.CurrentDirectory)} · {Environment.UserName}@{Environment.MachineName}" +
             $" · {DateTime.Now:HH:mm} · tema {theme.Name}");
-        AnsiConsole.MarkupLine($"[dim]{info}[/]");
-        AnsiConsole.MarkupLine("[dim]Escribe [bold]help[/] para ver todos los comandos[/]");
-        AnsiConsole.WriteLine();
+        _console.MarkupLine($"[dim]{info}[/]");
+        _console.MarkupLine("[dim]Escribe [bold]help[/] para ver todos los comandos[/]");
+        _console.WriteLine();
     }
 
     /// <summary>Intensidades relativas de los tonos del degradado, de oscuro a claro.</summary>
@@ -108,7 +142,7 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
     /// Anima una ola cromática que viaja de izquierda a derecha sobre el divisor y
     /// deja como frame final el degradado estático. Requiere consola interactiva.
     /// </summary>
-    private static void AnimateDivider(string accentHex)
+    private void AnimateDivider(string accentHex)
     {
         var cells = Math.Max(8, SafeWindowWidth() - 1);
         var stops = ShadePalette(accentHex).Select(ParseHex).ToArray();
@@ -124,14 +158,14 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
             }
 
             Console.Write("\r");
-            AnsiConsole.Markup(builder.ToString());
+            _console.Markup(builder.ToString());
             Console.Write("\x1b[K");
             Thread.Sleep(WaveFrameDelayMs);
         }
 
         // Frame final idéntico al divisor estático: transición perfecta al reposo.
         Console.Write("\r");
-        AnsiConsole.Markup(DividerMarkup(accentHex));
+        _console.Markup(DividerMarkup(accentHex));
         Console.Write("\x1b[K");
     }
 
@@ -191,7 +225,7 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
         if (completed != task && !cancellationToken.IsCancellationRequested)
         {
             var accent = HexColor(themeManager.Current.AccentHex);
-            await AnsiConsole.Status()
+            await _console.Status()
                 .Spinner(Spinner.Known.Dots)
                 .SpinnerStyle(new Style(accent))
                 .StartAsync(label, _ => task)
@@ -229,7 +263,7 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
                 $"[{barColor}]{BuildMiniBar(ratio, 12)}[/]");
         }
 
-        AnsiConsole.Write(table);
+        _console.Write(table);
     }
 
     public void RenderBarChart(string title, IEnumerable<(string Label, double Value, string ColorHint)> items, string valueSuffix)
@@ -245,7 +279,7 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
         }
 
         _ = valueSuffix;
-        AnsiConsole.Write(chart);
+        _console.Write(chart);
     }
 
     public void RenderSystemInfo(SystemUsage usage)
@@ -276,11 +310,18 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
             .Border(BoxBorder.Rounded)
             .BorderColor(HexColor(accent))
             .Header($"[bold #{accent}] Información del sistema [/]");
-        AnsiConsole.Write(panel);
+        _console.Write(panel);
     }
 
     public void RenderTable(string title, string[] columns, IEnumerable<string[]> rows)
     {
+        if (IsPlain)
+        {
+            WriteLine(string.Join('\t', columns));
+            foreach (var row in rows) WriteLine(string.Join('\t', row));
+            return;
+        }
+
         var table = new Table()
             .Border(TableBorder.Rounded)
             .BorderColor(HexColor(themeManager.Current.AccentHex))
@@ -296,7 +337,7 @@ public sealed class SpectreRenderer(ThemeManager themeManager) : IOutputRenderer
             table.AddRow(row.Select(Markup.Escape).ToArray());
         }
 
-        AnsiConsole.Write(table);
+        _console.Write(table);
     }
 
     private static string BuildRatioBar(double ratio) =>

@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MiShell.Core\MiShell.Core.csproj" />
+    <ProjectReference Include="..\MiShell.App\MiShell.App.csproj" />
   </ItemGroup>
 
 </Project>

@@ -121,14 +121,22 @@ public sealed class ReadFileCommand(IOutputRenderer renderer, string name) : IBu
 
     public string Description => "Muestra el contenido de un archivo de texto.";
 
-    public string Usage => $"{Name} <archivo>";
+    public string Usage => $"{Name} <archivo>  ·  {Name} < archivo";
+    public bool AcceptsInput => true;
 
-    public Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
+    public async Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
     {
-        if (arguments.Length != 1)
+        if (arguments.Length > 1)
         {
             renderer.WriteError($"Uso: {Name} <archivo>");
-            return Task.FromResult(CommandResult.Failure);
+            return CommandResult.Failure;
+        }
+
+        if (arguments.Length == 0)
+        {
+            while (await Console.In.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
+                renderer.WriteLine(line);
+            return CommandResult.Ok;
         }
 
         var requestedPath = arguments[0];
@@ -137,30 +145,31 @@ public sealed class ReadFileCommand(IOutputRenderer renderer, string name) : IBu
         {
             foreach (var line in File.ReadLines(fullPath))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 renderer.WriteLine(line);
             }
 
-            return Task.FromResult(CommandResult.Ok);
+            return CommandResult.Ok;
         }
         catch (FileNotFoundException)
         {
             renderer.WriteError($"El archivo no existe: '{requestedPath}'");
-            return Task.FromResult(CommandResult.Failure);
+            return CommandResult.Failure;
         }
         catch (DirectoryNotFoundException)
         {
             renderer.WriteError($"El directorio no existe: '{requestedPath}'");
-            return Task.FromResult(CommandResult.Failure);
+            return CommandResult.Failure;
         }
         catch (UnauthorizedAccessException)
         {
             renderer.WriteError($"Sin permisos para leer: '{requestedPath}'");
-            return Task.FromResult(CommandResult.Failure);
+            return CommandResult.Failure;
         }
         catch (IOException ex)
         {
             renderer.WriteError($"No se pudo leer '{requestedPath}': {ex.Message}");
-            return Task.FromResult(CommandResult.Failure);
+            return CommandResult.Failure;
         }
     }
 }

@@ -27,6 +27,8 @@ public interface IOutputRenderer
 {
     IThemePalette Theme { get; }
 
+    IDisposable RedirectOutput(TextWriter writer);
+
     void Write(string text, ConsoleColor? color = null);
 
     void WriteLine(string text = "", ConsoleColor? color = null);

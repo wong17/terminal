@@ -19,13 +19,21 @@ public sealed class Shell(
     ShellState state,
     HistoryStore history)
 {
+    private CancellationTokenSource? _currentCommand;
+
+    public void CancelCurrentCommand()
+    {
+        try { _currentCommand?.Cancel(); }
+        catch (ObjectDisposedException) { /* Terminó mientras llegaba Ctrl+C. */ }
+    }
+
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         renderer.RenderBanner();
         var lastExitCode = 0;
         TimeSpan? lastDuration = null;
 
-        while (!state.ExitRequested)
+        while (!state.ExitRequested && !cancellationToken.IsCancellationRequested)
         {
             NotifyCompletedJobs();
             state.History = history.Entries;
@@ -33,7 +41,8 @@ public sealed class Shell(
             string? input;
             try
             {
-                input = lineEditor.ReadLine(promptRenderer.Render(lastExitCode, lastDuration));
+                if (!Console.IsInputRedirected) Console.TreatControlCAsInput = true;
+                input = lineEditor.ReadLine(Console.IsInputRedirected ? "" : promptRenderer.Render(lastExitCode, lastDuration));
             }
             catch (Exception ex) when (ex is IOException or OperationCanceledException)
             {
@@ -41,6 +50,12 @@ public sealed class Shell(
                 break;
             }
 
+            finally
+            {
+                if (!Console.IsInputRedirected) Console.TreatControlCAsInput = false;
+            }
+
+            if (input is null) break;
             if (string.IsNullOrWhiteSpace(input))
             {
                 continue;
@@ -48,6 +63,8 @@ public sealed class Shell(
 
             history.Add(input.Trim());
 
+            using var commandCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _currentCommand = commandCancellation;
             try
             {
                 var commandLine = parser.Parse(input);
@@ -57,7 +74,7 @@ public sealed class Shell(
                 }
 
                 var stopwatch = Stopwatch.StartNew();
-                var exitCode = await executor.ExecuteAsync(commandLine, cancellationToken);
+                var exitCode = await executor.ExecuteAsync(commandLine, commandCancellation.Token);
                 stopwatch.Stop();
 
                 lastExitCode = exitCode;
@@ -90,8 +107,10 @@ public sealed class Shell(
             }
             catch (OperationCanceledException)
             {
-                renderer.WriteLine();
-                break;
+                if (cancellationToken.IsCancellationRequested) break;
+                renderer.WriteInfo("Comando cancelado.");
+                lastExitCode = 130;
+                lastDuration = null;
             }
             catch (Exception ex)
             {
@@ -100,6 +119,7 @@ public sealed class Shell(
                 lastExitCode = 1;
                 lastDuration = null;
             }
+            finally { _currentCommand = null; }
         }
 
         renderer.WriteSuccess("Hasta pronto.");
@@ -110,7 +130,16 @@ public sealed class Shell(
     {
         while (state.Jobs.RemoveFirstCompleted() is { } job)
         {
-            renderer.WriteInfo($"[{job.JobId}] terminado: {job.CommandLine}");
+            try
+            {
+                var code = job.Completion.GetAwaiter().GetResult();
+                renderer.WriteInfo($"[{job.JobId}] terminado con código {code}: {job.CommandLine}");
+            }
+            catch (Exception ex) when (ex is IOException or InvalidOperationException or OperationCanceledException)
+            {
+                renderer.WriteError($"[{job.JobId}] {ex.Message}");
+            }
+            finally { job.Dispose(); }
         }
     }
 }

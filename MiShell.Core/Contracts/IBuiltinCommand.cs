@@ -43,5 +43,7 @@ public interface IBuiltinCommand
     /// <summary>Sintaxis de uso mostrada en <c>help</c>.</summary>
     string Usage => Name;
 
+    bool AcceptsInput => false;
+
     Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken);
 }

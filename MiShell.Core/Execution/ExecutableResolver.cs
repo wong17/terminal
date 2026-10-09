@@ -1,43 +1,33 @@
-using System.Collections.Concurrent;
-
 namespace MiShell.Core.Execution;
 
 public sealed class ExecutableResolver : IExecutableResolver
 {
-    private static readonly string[] Extensions = [".exe", ".cmd", ".bat", ".com", ".ps1"];
-    private readonly ConcurrentDictionary<string, string?> _cache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly string[] Extensions = [".exe", ".com", ".cmd", ".bat", ".ps1"];
 
     public string? Resolve(string name)
     {
-        return _cache.GetOrAdd(name, static n =>
+        if (name.Contains(Path.DirectorySeparatorChar) || name.Contains(Path.AltDirectorySeparatorChar) || Path.IsPathRooted(name))
+            return File.Exists(name) ? Path.GetFullPath(name) : null;
+
+        var directories = (System.Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Append(Directory.GetCurrentDirectory());
+        foreach (var directory in directories)
         {
-            if (n.Contains(Path.DirectorySeparatorChar) || n.Contains(Path.AltDirectorySeparatorChar))
+            if (Path.HasExtension(name))
             {
-                return File.Exists(n) ? Path.GetFullPath(n) : null;
+                var candidate = Path.Combine(directory, name);
+                if (File.Exists(candidate)) return Path.GetFullPath(candidate);
             }
-
-            var pathDirs = (System.Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
-                .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-            foreach (var dir in pathDirs.Append(Directory.GetCurrentDirectory()))
+            else
             {
-                foreach (var ext in Extensions)
+                foreach (var extension in Extensions)
                 {
-                    var candidate = Path.Combine(dir, n + ext);
-                    if (File.Exists(candidate))
-                    {
-                        return Path.GetFullPath(candidate);
-                    }
-
-                    // También permite nombres que ya traen extensión (ej. "script.cmd").
-                    if (Path.GetExtension(n).Length > 0 && File.Exists(Path.Combine(dir, n)))
-                    {
-                        return Path.GetFullPath(Path.Combine(dir, n));
-                    }
+                    var candidate = Path.Combine(directory, name + extension);
+                    if (File.Exists(candidate)) return Path.GetFullPath(candidate);
                 }
             }
-
-            return null;
-        });
+        }
+        return null;
     }
 }

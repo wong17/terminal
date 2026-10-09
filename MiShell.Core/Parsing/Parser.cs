@@ -1,220 +1,136 @@
 using MiShell.Core.Contracts;
+using System.Text;
 
 namespace MiShell.Core.Parsing;
 
-/// <summary>Error de sintaxis detectado durante el análisis.</summary>
 public sealed class SyntaxException(string message) : Exception(message);
 
-/// <summary>Convierte una línea de entrada en un <see cref="CommandLine"/> (AST).</summary>
+/// <summary>Analiza el subconjunto de sintaxis de MiShell, conservando los operadores entre comillas.</summary>
 public sealed class Parser(IShellEnvironment environment)
 {
+    private sealed record Token(string Text, bool IsOperator = false);
+
     public CommandLine Parse(string input)
     {
         var tokens = Tokenize(input);
+        var index = 0;
         var pipelines = new List<ChainedPipeline>();
         var chain = ChainOperator.Always;
-        var runInBackground = false;
-
-        while (tokens.Count > 0)
+        var background = false;
+        while (index < tokens.Count)
         {
-            var (commands, nextChain, background) = ParsePipeline(tokens);
-            runInBackground |= background;
-            if (commands.Count == 0)
+            var commands = new List<CommandSpec> { ReadCommand() };
+            while (At("|"))
             {
-                break;
+                index++;
+                commands.Add(ReadCommand());
             }
 
             pipelines.Add(new ChainedPipeline(commands, chain));
-            chain = nextChain;
-        }
-
-        if (pipelines.Count == 0)
-        {
-            return new CommandLine([], false);
-        }
-
-        return tokens.Count > 0 ? throw new SyntaxException($"Token inesperado '{tokens[0]}'.") : new CommandLine(pipelines, runInBackground);
-    }
-
-    private static (List<CommandSpec> Commands, ChainOperator NextChain, bool Background) ParsePipeline(List<string> tokens)
-    {
-        var commands = new List<CommandSpec>();
-        var background = false;
-
-        while (tokens.Count > 0)
-        {
-            var (spec, chain, endedPipeline, sawBackground) = ParseCommand(tokens);
-            background |= sawBackground;
-            if (spec is not null)
+            if (index == tokens.Count) break;
+            var op = tokens[index++].Text;
+            if (op == "&")
             {
-                commands.Add(spec);
-            }
-
-            if (endedPipeline)
-            {
-                return (commands, chain, background);
-            }
-
-            if (tokens.Count == 0)
-            {
+                if (index != tokens.Count || pipelines.Count != 1)
+                    throw new SyntaxException("'&' solo se admite al final de una tubería sin &&/||.");
+                background = true;
                 break;
             }
 
-            if (tokens[0] != "|") continue;
-
-            tokens.RemoveAt(0);
-            if (tokens.Count == 0 || tokens[0] is "|" or "&" or "&&" or "||")
+            chain = op switch
             {
-                throw new SyntaxException("Falta un comando después de '|'.");
-            }
+                "&&" => ChainOperator.AndAlso,
+                "||" => ChainOperator.OrElse,
+                _ => throw new SyntaxException($"Operador inesperado '{op}'."),
+            };
+            if (index == tokens.Count) throw new SyntaxException($"Falta un comando después de '{op}'.");
         }
 
-        return (commands, ChainOperator.Always, background);
-    }
+        return new CommandLine(pipelines, background);
 
-    private static (CommandSpec? Spec, ChainOperator Chain, bool EndedPipeline, bool Background) ParseCommand(List<string> tokens)
-    {
-        string? executable = null;
-        var arguments = new List<string>();
-        var redirections = new List<Redirection>();
+        bool At(string op) => index < tokens.Count && tokens[index] is { IsOperator: true } t && t.Text == op;
 
-        while (tokens.Count > 0)
+        CommandSpec ReadCommand()
         {
-            var token = tokens[0];
-            if (token is "|" or "&&" or "||" or "&")
+            string? executable = null;
+            var arguments = new List<string>();
+            var redirects = new List<Redirection>();
+            while (index < tokens.Count)
             {
-                tokens.RemoveAt(0);
-                var chain = token switch
+                var token = tokens[index];
+                if (token.IsOperator && token.Text is "|" or "&&" or "||" or "&") break;
+                index++;
+                if (token.IsOperator)
                 {
-                    "&&" => ChainOperator.AndAlso,
-                    "||" => ChainOperator.OrElse,
-                    _ => ChainOperator.Always,
-                };
-                return (MakeSpec(executable, arguments, redirections), chain, token != "|", token == "&");
-            }
-
-            tokens.RemoveAt(0);
-            if (RedirectionKindFor(token) is { } kind)
-            {
-                if (tokens.Count == 0)
-                {
-                    throw new SyntaxException($"Falta el archivo después de '{token}'.");
+                    var kind = token.Text switch
+                    {
+                        "<" => RedirectionKind.Input,
+                        ">" => RedirectionKind.OutputTruncate,
+                        ">>" => RedirectionKind.OutputAppend,
+                        _ => throw new SyntaxException($"Operador inesperado '{token.Text}'."),
+                    };
+                    if (index == tokens.Count || tokens[index].IsOperator || tokens[index].Text.Length == 0)
+                        throw new SyntaxException($"Falta el archivo después de '{token.Text}'.");
+                    if (redirects.Any(r => (r.Kind == RedirectionKind.Input) == (kind == RedirectionKind.Input)))
+                        throw new SyntaxException("Solo se admite una redirección de entrada y una de salida por comando.");
+                    redirects.Add(new Redirection(kind, tokens[index++].Text));
                 }
-
-                redirections.Add(new Redirection(kind, tokens[0]));
-                tokens.RemoveAt(0);
-                continue;
+                else if (executable is null) executable = token.Text;
+                else arguments.Add(token.Text);
             }
 
-            if (executable is null)
-            {
-                executable = token;
-            }
-            else
-            {
-                arguments.Add(token);
-            }
+            if (string.IsNullOrEmpty(executable)) throw new SyntaxException("Falta un comando.");
+            return new CommandSpec(executable, arguments, redirects);
         }
-
-        return (MakeSpec(executable, arguments, redirections), ChainOperator.Always, true, false);
     }
 
-    private static CommandSpec? MakeSpec(string? executable, List<string> arguments, List<Redirection> redirections) =>
-        executable is null
-            ? redirections.Count > 0
-                ? throw new SyntaxException("Una redirección necesita un comando.")
-                : null
-            : new CommandSpec(executable, arguments, redirections);
-
-    private static RedirectionKind? RedirectionKindFor(string token) => token switch
+    private List<Token> Tokenize(string input)
     {
-        ">" => RedirectionKind.OutputTruncate,
-        ">>" => RedirectionKind.OutputAppend,
-        "<" => RedirectionKind.Input,
-        _ => null,
-    };
-
-    /// <summary>Divide la entrada respetando comillas y expande variables <c>$VAR</c>.</summary>
-    private List<string> Tokenize(string input)
-    {
-        var tokens = new List<string>();
-        var current = new System.Text.StringBuilder();
+        var tokens = new List<Token>();
+        var current = new StringBuilder();
+        var unquoted = new StringBuilder();
         var inToken = false;
-
         for (var i = 0; i < input.Length; i++)
         {
             var c = input[i];
-            switch (c)
+            if (char.IsWhiteSpace(c)) { Flush(); continue; }
+            if (c is '"' or '\'')
             {
-                case ' ' or '\t':
-                    Flush();
-                    break;
-                case '"' or '\'':
-                    Flush();
-                    i = ReadQuoted(input, i, current);
-                    inToken = true;
-                    break;
-                case '>' or '<' or '|':
-                    {
-                        Flush();
-                        string op = c == '|' && i + 1 < input.Length && input[i + 1] == '|' ? "||" : c.ToString();
-                        if (op == "||")
-                        {
-                            i++;
-                        }
-                        else if (c == '>' && i + 1 < input.Length && input[i + 1] == '>')
-                        {
-                            op = ">>";
-                            i++;
-                        }
-
-                        tokens.Add(op);
-                        break;
-                    }
-
-                case '&':
-                    Flush();
-                    tokens.Add(i + 1 < input.Length && input[i + 1] == '&' ? "&&" : "&");
-                    if (i + 1 < input.Length && input[i + 1] == '&')
-                    {
-                        i++;
-                    }
-
-                    break;
-                default:
-                    current.Append(c);
-                    inToken = true;
-                    break;
+                AppendUnquoted();
+                inToken = true;
+                var quote = c;
+                var quoted = new StringBuilder();
+                for (i++; i < input.Length && input[i] != quote; i++) quoted.Append(input[i]);
+                if (i == input.Length) throw new SyntaxException("Comilla sin cerrar.");
+                current.Append(quote == '"' ? environment.Expand(quoted.ToString()) : quoted.ToString());
             }
+            else if (c is '>' or '<' or '|' or '&')
+            {
+                Flush();
+                var op = c.ToString();
+                if (i + 1 < input.Length && input[i + 1] == c && c is '>' or '|' or '&')
+                    op += input[++i];
+                tokens.Add(new Token(op, true));
+            }
+            else { unquoted.Append(c); inToken = true; }
         }
 
         Flush();
         return tokens;
 
+        void AppendUnquoted()
+        {
+            current.Append(environment.Expand(unquoted.ToString()));
+            unquoted.Clear();
+        }
+
         void Flush()
         {
             if (!inToken) return;
-
-            tokens.Add(environment.Expand(current.ToString()));
+            AppendUnquoted();
+            tokens.Add(new Token(current.ToString()));
             current.Clear();
             inToken = false;
         }
-    }
-
-    private static int ReadQuoted(string input, int quoteIndex, System.Text.StringBuilder target)
-    {
-        var quote = input[quoteIndex];
-        for (var i = quoteIndex + 1; i < input.Length; i++)
-        {
-            var c = input[i];
-            if (c == quote)
-            {
-                return i;
-            }
-
-            target.Append(c);
-        }
-
-        throw new SyntaxException($"Comilla sin cerrar cerca de '{input[Math.Max(0, quoteIndex - 5)..]}'.".Trim());
     }
 }

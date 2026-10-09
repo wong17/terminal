@@ -1,8 +1,9 @@
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace MiShell.Core.Jobs;
 
-public sealed class JobTable : IJobTable
+public sealed class JobTable : IJobTable, IAsyncDisposable
 {
     private readonly Lock _gate = new();
     private readonly List<BackgroundJob> _jobs = [];
@@ -10,23 +11,26 @@ public sealed class JobTable : IJobTable
 
     public IReadOnlyList<BackgroundJob> Jobs
     {
-        get
-        {
-            lock (_gate)
-            {
-                return _jobs.ToArray();
-            }
-        }
+        get { lock (_gate) return _jobs.ToArray(); }
     }
 
-    public BackgroundJob Add(Process process, string commandLine)
+    public BackgroundJob Add(Process process, string commandLine) =>
+        Add([process], commandLine, WaitAsync(process));
+
+    public BackgroundJob Add(IReadOnlyList<Process> processes, string commandLine, Task<int> completion)
     {
         lock (_gate)
         {
-            var job = new BackgroundJob(_nextJobId++, process, commandLine);
+            var job = new BackgroundJob(_nextJobId++, processes, commandLine, completion);
             _jobs.Add(job);
             return job;
         }
+    }
+
+    private static async Task<int> WaitAsync(Process process)
+    {
+        await process.WaitForExitAsync().ConfigureAwait(false);
+        return process.ExitCode;
     }
 
     public BackgroundJob? RemoveFirstCompleted()
@@ -34,11 +38,7 @@ public sealed class JobTable : IJobTable
         lock (_gate)
         {
             var completed = _jobs.FirstOrDefault(j => j.HasExited);
-            if (completed is not null)
-            {
-                _jobs.Remove(completed);
-            }
-
+            if (completed is not null) _jobs.Remove(completed);
             return completed;
         }
     }
@@ -47,23 +47,44 @@ public sealed class JobTable : IJobTable
     {
         lock (_gate)
         {
-            job = _jobs.FirstOrDefault(j => int.TryParse(input, out var id)
+            var key = input.TrimStart('%');
+            if (string.IsNullOrWhiteSpace(key)) { job = null; return false; }
+            job = _jobs.FirstOrDefault(j => int.TryParse(key, out var id)
                 ? j.JobId == id
-                : j.CommandLine.StartsWith(input, StringComparison.OrdinalIgnoreCase));
+                : j.CommandLine.StartsWith(key, StringComparison.OrdinalIgnoreCase));
             return job is not null;
         }
     }
 
+    public void Remove(BackgroundJob job)
+    {
+        lock (_gate) _jobs.Remove(job);
+        job.Dispose();
+    }
+
     public void Kill(BackgroundJob job)
     {
-        lock (_gate)
+        foreach (var process in job.Processes)
         {
-            _jobs.Remove(job);
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { /* Terminó entre la consulta y Kill. */ }
         }
+    }
 
-        if (!job.Process.HasExited)
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var job in Jobs)
         {
-            job.Process.Kill(entireProcessTree: true);
+            try
+            {
+                Kill(job);
+                await job.Completion.ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or OperationCanceledException)
+            {
+                // El cierre libera los handles incluso si un proceso terminó por otra vía.
+            }
+            finally { Remove(job); }
         }
     }
 }

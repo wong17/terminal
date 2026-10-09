@@ -20,11 +20,11 @@ public sealed class JobsCommand(IOutputRenderer renderer) : IBuiltinCommand
 
         renderer.RenderTable(
             "Trabajos en segundo plano",
-            ["Job", "PID", "Estado", "Comando"],
+            ["Job", "PID(s)", "Estado", "Comando"],
             jobs.Select(j => (string[])
             [
                 j.JobId.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                j.Process.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                string.Join(", ", j.Processes.Select(p => p.Id)),
                 j.HasExited ? "terminado" : "corriendo",
                 j.CommandLine,
             ]));
@@ -39,13 +39,13 @@ public sealed class KillCommand(IOutputRenderer renderer) : IBuiltinCommand
 
     public string Description => "Termina un trabajo en segundo plano.";
 
-    public string Usage => "kill <job-id | pid | nombre>";
+    public string Usage => "kill %<job-id> | <pid> | <nombre>";
 
     public Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
     {
-        if (arguments.Length == 0)
+        if (arguments.Length != 1)
         {
-            renderer.WriteError("Uso: kill <job-id | pid | nombre>");
+            renderer.WriteError("Uso: kill %<job-id> | <pid> | <nombre>");
             return Task.FromResult(CommandResult.Failure);
         }
 
@@ -53,7 +53,7 @@ public sealed class KillCommand(IOutputRenderer renderer) : IBuiltinCommand
         {
             try
             {
-                var process = System.Diagnostics.Process.GetProcessById(pid);
+                using var process = System.Diagnostics.Process.GetProcessById(pid);
                 process.Kill(entireProcessTree: true);
                 renderer.WriteSuccess($"Proceso {pid} terminado.");
                 return Task.FromResult(CommandResult.Ok);
@@ -115,8 +115,17 @@ public sealed class FgCommand(IOutputRenderer renderer) : IBuiltinCommand
         }
 
         renderer.WriteInfo($"Esperando [{job.JobId}] {job.CommandLine} (PID {job.Process.Id})…");
-        await job.Process.WaitForExitAsync(cancellationToken);
-        renderer.WriteSuccess($"[{job.JobId}] terminó con código {job.Process.ExitCode}.");
-        return CommandResult.Ok;
+        int code;
+        try { code = await job.Completion.WaitAsync(cancellationToken).ConfigureAwait(false); }
+        catch (OperationCanceledException)
+        {
+            context.Jobs.Kill(job);
+            try { await job.Completion.ConfigureAwait(false); }
+            finally { context.Jobs.Remove(job); }
+            throw;
+        }
+        context.Jobs.Remove(job);
+        renderer.WriteInfo($"[{job.JobId}] terminó con código {code}.");
+        return new CommandResult(code);
     }
 }

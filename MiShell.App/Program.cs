@@ -13,8 +13,12 @@ using MiShell.UI.Prompt;
 using MiShell.UI.Rendering;
 using MiShell.UI.Themes;
 
-var settings = ShellSettings.Load(Path.Combine(
-    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MiShell", "settings.json"));
+var dataOverride = Environment.GetEnvironmentVariable("MISHELL_DATA_DIR");
+var dataDirectory = string.IsNullOrWhiteSpace(dataOverride)
+    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MiShell")
+    : Path.GetFullPath(dataOverride);
+var settings = ShellSettings.Load(Path.Combine(dataDirectory, "settings.json"));
+if (!string.IsNullOrWhiteSpace(dataOverride)) settings.DataDirectory = dataDirectory;
 
 var services = new ServiceCollection();
 
@@ -80,16 +84,15 @@ services.AddSingleton(sp => new PromptRenderer(
 services.AddSingleton<Shell>();
 
 await using var provider = services.BuildServiceProvider();
-using var cts = new CancellationTokenSource();
-Console.CancelKeyPress += (_, e) =>
-{
-    e.Cancel = true; // Ctrl+C cancela el comando en curso, no el shell.
-    cts.Cancel();
-};
-
 var shell = provider.GetRequiredService<Shell>();
-var exitCode = await shell.RunAsync(cts.Token);
-return exitCode;
+ConsoleCancelEventHandler cancelHandler = (_, e) =>
+{
+    e.Cancel = true;
+    shell.CancelCurrentCommand();
+};
+Console.CancelKeyPress += cancelHandler;
+try { return await shell.RunAsync(CancellationToken.None); }
+finally { Console.CancelKeyPress -= cancelHandler; }
 
 static string[] CompletionsFor(IServiceProvider sp, string line)
 {

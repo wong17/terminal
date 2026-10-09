@@ -92,4 +92,50 @@ public sealed class ParserTests
     {
         Assert.Empty(_parser.Parse("   ").Pipelines);
     }
+
+    [Theory]
+    [InlineData("a |")]
+    [InlineData("a &&")]
+    [InlineData("a ||")]
+    [InlineData("| a")]
+    [InlineData("a | | b")]
+    [InlineData("a > | b")]
+    [InlineData("a >")]
+    [InlineData("a <")]
+    [InlineData("&")]
+    [InlineData("a & b")]
+    [InlineData("a && b &")]
+    [InlineData("a > one > two")]
+    public void IncompleteSyntaxIsRejected(string input) =>
+        Assert.Throws<SyntaxException>(() => _parser.Parse(input));
+
+    [Theory]
+    [InlineData("|")]
+    [InlineData("&")]
+    [InlineData("&&")]
+    [InlineData("||")]
+    [InlineData(">")]
+    [InlineData(">>")]
+    [InlineData("<")]
+    public void QuotedOperatorsAreLiteralArguments(string literal)
+    {
+        var line = _parser.Parse($"echo \"{literal}\"");
+        var command = Assert.Single(Assert.Single(line.Pipelines).Commands);
+        Assert.Equal(literal, Assert.Single(command.Arguments));
+        Assert.Empty(command.Redirections);
+    }
+
+    [Fact]
+    public void QuotedPartsAndEmptyArgumentsArePreserved()
+    {
+        var command = Assert.Single(Assert.Single(_parser.Parse("echo prefix\"hello world\"tail \"\"").Pipelines).Commands);
+        Assert.Equal(["prefixhello worldtail", ""], command.Arguments);
+    }
+
+    [Fact]
+    public void SingleQuotesSuppressVariableExpansion()
+    {
+        var command = Assert.Single(Assert.Single(_parser.Parse("echo '$HOME' \"$HOME\"").Pipelines).Commands);
+        Assert.Equal(["$HOME", @"C:\Users\test"], command.Arguments);
+    }
 }

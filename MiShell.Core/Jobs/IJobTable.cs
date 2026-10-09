@@ -2,23 +2,29 @@ using System.Diagnostics;
 
 namespace MiShell.Core.Jobs;
 
-/// <summary>Un proceso lanzado en segundo plano con <c>&amp;</c>.</summary>
-public sealed record BackgroundJob(int JobId, Process Process, string CommandLine)
+/// <summary>La tabla conserva todos los procesos y flujos hasta completar la tubería.</summary>
+public sealed class BackgroundJob(int jobId, IReadOnlyList<Process> processes, string commandLine, Task<int> completion) : IDisposable
 {
-    public bool HasExited => Process.HasExited;
+    public int JobId { get; } = jobId;
+    public IReadOnlyList<Process> Processes { get; } = processes;
+    public Process Process => Processes[^1];
+    public string CommandLine { get; } = commandLine;
+    public Task<int> Completion { get; } = completion;
+    public bool HasExited => Completion.IsCompleted;
+
+    public void Dispose()
+    {
+        foreach (var process in Processes) process.Dispose();
+    }
 }
 
-/// <summary>Registro de trabajos en segundo plano (equivalente conceptual de la job table de un SO).</summary>
 public interface IJobTable
 {
     IReadOnlyList<BackgroundJob> Jobs { get; }
-
     BackgroundJob Add(Process process, string commandLine);
-
-    /// <summary>Quita y devuelve el job cuyo proceso ya terminó; null si no hay ninguno finalizado.</summary>
+    BackgroundJob Add(IReadOnlyList<Process> processes, string commandLine, Task<int> completion);
     BackgroundJob? RemoveFirstCompleted();
-
     bool TryGetByPrefix(string input, out BackgroundJob? job);
-
+    void Remove(BackgroundJob job);
     void Kill(BackgroundJob job);
 }
