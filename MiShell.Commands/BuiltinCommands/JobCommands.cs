@@ -20,12 +20,13 @@ public sealed class JobsCommand(IOutputRenderer renderer) : IBuiltinCommand
 
         renderer.RenderTable(
             "Trabajos en segundo plano",
-            ["Job", "PID(s)", "Estado", "Comando"],
+            ["Job", "PID(s)", "Estado", "Resultado", "Comando"],
             jobs.Select(j => (string[])
             [
                 j.JobId.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 string.Join(", ", j.Processes.Select(p => p.Id)),
-                j.HasExited ? "terminado" : "corriendo",
+                j.Status,
+                j.Detail,
                 j.CommandLine,
             ]));
 
@@ -115,17 +116,25 @@ public sealed class FgCommand(IOutputRenderer renderer) : IBuiltinCommand
         }
 
         renderer.WriteInfo($"Esperando [{job.JobId}] {job.CommandLine} (PID {job.Process.Id})…");
-        int code;
-        try { code = await job.Completion.WaitAsync(cancellationToken).ConfigureAwait(false); }
+        try
+        {
+            var code = await job.Completion.WaitAsync(cancellationToken).ConfigureAwait(false);
+            if (code == 0) renderer.WriteInfo($"[{job.JobId}] terminó con código {code}.");
+            else renderer.WriteError($"[{job.JobId}] falló con código {code}.");
+            return new CommandResult(code);
+        }
         catch (OperationCanceledException)
         {
             context.Jobs.Kill(job);
             try { await job.Completion.ConfigureAwait(false); }
-            finally { context.Jobs.Remove(job); }
+            catch (Exception ex) when (ex is IOException or OperationCanceledException) { }
             throw;
         }
-        context.Jobs.Remove(job);
-        renderer.WriteInfo($"[{job.JobId}] terminó con código {code}.");
-        return new CommandResult(code);
+        catch (IOException ex)
+        {
+            renderer.WriteError($"[{job.JobId}] falló: {ex.Message}");
+            return CommandResult.Failure;
+        }
+        finally { context.Jobs.Remove(job); }
     }
 }

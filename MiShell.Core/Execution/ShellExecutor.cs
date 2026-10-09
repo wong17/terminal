@@ -48,7 +48,8 @@ public sealed class ShellExecutor(
     IExecutableResolver resolver,
     IOutputRenderer renderer,
     IJobTable jobTable,
-    ShellState state) : IShellExecutor
+    ShellState state,
+    Func<string, FileMode, Stream>? outputFactory = null) : IShellExecutor
 {
     private readonly Dictionary<string, IBuiltinCommand> _builtins = builtins.ToDictionary(b => b.Name, StringComparer.OrdinalIgnoreCase);
 
@@ -68,6 +69,7 @@ public sealed class ShellExecutor(
 
     private async Task<int> RunPipelineAsync(IReadOnlyList<CommandSpec> commands, bool background, CancellationToken cancellationToken)
     {
+        ValidateRedirections(commands);
         var first = commands[0];
         if (commands.Count > 1 && commands.Any(c => _builtins.ContainsKey(c.Executable)))
         {
@@ -94,8 +96,7 @@ public sealed class ShellExecutor(
         var originalInput = Console.In;
         using var reader = input is null ? null : new StreamReader(Path.GetFullPath(input.Path, state.WorkingDirectory));
         // Un fallo al abrir stdin no debe truncar stdout.
-        await using var writer = output is null ? null : new StreamWriter(
-            Path.GetFullPath(output.Path, state.WorkingDirectory), output.Kind == RedirectionKind.OutputAppend);
+        await using var writer = output is null ? null : new StreamWriter(OpenOutput(output));
         using var redirect = writer is null ? null : renderer.RedirectOutput(writer);
         try
         {
@@ -121,7 +122,19 @@ public sealed class ShellExecutor(
         var inputs = new Stream?[commands.Count];
         var outputs = new Stream?[commands.Count];
         var transferred = false;
-        var token = background ? CancellationToken.None : cancellationToken;
+        var lifetime = CancellationTokenSource.CreateLinkedTokenSource(background ? CancellationToken.None : cancellationToken);
+        var token = lifetime.Token;
+        Exception? ioFailure = null;
+        async Task GuardAsync(Task copy)
+        {
+            try { await copy.ConfigureAwait(false); }
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+            {
+                Interlocked.CompareExchange(ref ioFailure, ex, null);
+                lifetime.Cancel();
+                throw;
+            }
+        }
         try
         {
             for (var i = 0; i < commands.Count; i++)
@@ -135,8 +148,7 @@ public sealed class ShellExecutor(
             {
                 var output = commands[i].Redirections.FirstOrDefault(r => r.Kind != RedirectionKind.Input);
                 if (output is not null)
-                    outputs[i] = new FileStream(Path.GetFullPath(output.Path, state.WorkingDirectory),
-                        output.Kind == RedirectionKind.OutputAppend ? FileMode.Append : FileMode.Create, FileAccess.Write);
+                    outputs[i] = OpenOutput(output);
             }
 
             for (var i = 0; i < commands.Count; i++)
@@ -158,24 +170,24 @@ public sealed class ShellExecutor(
                     throw new InvalidOperationException($"No se pudo iniciar '{commands[i].Executable}'.");
                 }
                 processes.Add(process);
-                copies.Add(DrainErrorAsync(process, token));
+                copies.Add(GuardAsync(DrainErrorAsync(process, token)));
             }
 
             for (var i = 0; i < processes.Count; i++)
             {
                 var process = processes[i];
                 if (inputs[i] is { } input)
-                    copies.Add(CopyAsync(input, process.StandardInput.BaseStream, true, token));
+                    copies.Add(GuardAsync(CopyAsync(input, process.StandardInput.BaseStream, true, token)));
                 else if (i == 0 && background || i > 0 && outputs[i - 1] is not null)
                     process.StandardInput.Close();
 
                 if (outputs[i] is { } output)
-                    copies.Add(CopyAsync(process.StandardOutput.BaseStream, output, false, token));
+                    copies.Add(GuardAsync(CopyAsync(process.StandardOutput.BaseStream, output, false, token)));
                 else if (i < processes.Count - 1)
                 {
                     // Una redirección explícita reemplaza el extremo correspondiente del pipe.
                     var destination = inputs[i + 1] is null ? processes[i + 1].StandardInput.BaseStream : Stream.Null;
-                    copies.Add(CopyAsync(process.StandardOutput.BaseStream, destination, destination != Stream.Null, token));
+                    copies.Add(GuardAsync(CopyAsync(process.StandardOutput.BaseStream, destination, destination != Stream.Null, token)));
                 }
             }
 
@@ -203,6 +215,11 @@ public sealed class ShellExecutor(
                     await io.ConfigureAwait(false);
                     return processes[^1].ExitCode;
                 }
+                catch (Exception) when (ioFailure is not null)
+                {
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ioFailure).Throw();
+                    throw;
+                }
                 finally
                 {
                     foreach (var process in processes)
@@ -214,6 +231,7 @@ public sealed class ShellExecutor(
                     try { await Task.WhenAll(copies).ConfigureAwait(false); }
                     catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException) { }
                     await DisposeStreamsAsync().ConfigureAwait(false);
+                    lifetime.Dispose();
                 }
             }
         }
@@ -231,6 +249,7 @@ public sealed class ShellExecutor(
                 catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException) { }
                 await DisposeStreamsAsync().ConfigureAwait(false);
                 foreach (var process in processes) process.Dispose();
+                lifetime.Dispose();
             }
         }
 
@@ -239,6 +258,34 @@ public sealed class ShellExecutor(
             foreach (var stream in inputs.Concat(outputs).OfType<Stream>())
                 await stream.DisposeAsync().ConfigureAwait(false);
         }
+    }
+
+    private Stream OpenOutput(Redirection output)
+    {
+        var path = Path.GetFullPath(output.Path, state.WorkingDirectory);
+        var mode = output.Kind == RedirectionKind.OutputAppend ? FileMode.Append : FileMode.Create;
+        return outputFactory?.Invoke(path, mode) ?? new FileStream(path, mode, FileAccess.Write);
+    }
+
+    private void ValidateRedirections(IReadOnlyList<CommandSpec> commands)
+    {
+        var inputs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var outputs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var command in commands)
+        {
+            if (command.Executable.ToLowerInvariant() is "cat" or "type" or "source")
+                foreach (var argument in command.Arguments)
+                    inputs.Add(Path.GetFullPath(argument, state.WorkingDirectory));
+            foreach (var redirection in command.Redirections)
+            {
+                var path = Path.GetFullPath(redirection.Path, state.WorkingDirectory);
+                if (redirection.Kind == RedirectionKind.Input) inputs.Add(path);
+                else if (!outputs.Add(path))
+                    throw new IOException("La misma tubería no puede escribir dos veces en el mismo archivo.");
+            }
+        }
+        if (inputs.Overlaps(outputs))
+            throw new IOException("El archivo de entrada y el de salida deben ser distintos para conservar los datos.");
     }
 
     private static async Task DrainErrorAsync(Process process, CancellationToken token)
@@ -250,7 +297,7 @@ public sealed class ShellExecutor(
     private static async Task CopyAsync(Stream source, Stream destination, bool closeDestination, CancellationToken token)
     {
         try { await source.CopyToAsync(destination, token).ConfigureAwait(false); }
-        catch (IOException) when (closeDestination) { /* El consumidor cerró stdin anticipadamente. */ }
+        catch (IOException ex) when (closeDestination && (ex.HResult & 0xffff) is 109 or 232) { /* El consumidor cerró stdin anticipadamente. */ }
         finally { if (closeDestination) await destination.DisposeAsync().ConfigureAwait(false); }
     }
 }

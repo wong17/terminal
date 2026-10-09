@@ -11,6 +11,9 @@ public sealed class BackgroundJob(int jobId, IReadOnlyList<Process> processes, s
     public string CommandLine { get; } = commandLine;
     public Task<int> Completion { get; } = completion;
     public bool HasExited => Completion.IsCompleted;
+    public string Status => !HasExited ? "corriendo" : Completion.IsCompletedSuccessfully && Completion.Result == 0 ? "terminado" : "fallido";
+    public string Detail => Completion.IsFaulted ? Completion.Exception!.GetBaseException().Message
+        : Completion.IsCanceled ? "cancelado" : Completion.IsCompletedSuccessfully ? $"código {Completion.Result}" : "en ejecución";
 
     public void Dispose()
     {

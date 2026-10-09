@@ -133,7 +133,8 @@ public sealed class Shell(
             try
             {
                 var code = job.Completion.GetAwaiter().GetResult();
-                renderer.WriteInfo($"[{job.JobId}] terminado con código {code}: {job.CommandLine}");
+                if (code == 0) renderer.WriteInfo($"[{job.JobId}] terminado con código {code}: {job.CommandLine}");
+                else renderer.WriteError($"[{job.JobId}] falló con código {code}: {job.CommandLine}");
             }
             catch (Exception ex) when (ex is IOException or InvalidOperationException or OperationCanceledException)
             {

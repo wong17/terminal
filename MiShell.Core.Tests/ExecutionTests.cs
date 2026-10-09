@@ -20,7 +20,7 @@ internal sealed class ExecutionFixture : IAsyncDisposable
     public ShellExecutor Executor { get; }
     private readonly IDisposable _outputScope;
 
-    public ExecutionFixture()
+    public ExecutionFixture(Func<string, FileMode, Stream>? outputFactory = null)
     {
         Directory.CreateDirectory(DirectoryPath);
         _outputScope = Renderer.RedirectOutput(Output);
@@ -30,7 +30,7 @@ internal sealed class ExecutionFixture : IAsyncDisposable
             new EchoCommand(Renderer), new PwdCommand(Renderer), new ExitCommand(),
             new ReadFileCommand(Renderer, "cat"), new ListDirectoryCommand(Renderer, "ls"),
         ];
-        Executor = new ShellExecutor(builtins, new ExecutableResolver(), Renderer, Jobs, State);
+        Executor = new ShellExecutor(builtins, new ExecutableResolver(), Renderer, Jobs, State, outputFactory);
     }
 
     public Task<int> Run(string input, CancellationToken token = default) => Executor.ExecuteAsync(Parser.Parse(input), token);
