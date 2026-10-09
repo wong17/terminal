@@ -76,9 +76,13 @@ services.AddSingleton<IBuiltinCommand, ThemeCommand>();
 services.AddSingleton<IBuiltinCommand, SetCommand>();
 
 // UI interactiva
+services.AddSingleton(sp => new CompletionProvider(
+    () => sp.GetServices<IBuiltinCommand>().Select(b => b.Name),
+    () => sp.GetRequiredService<ShellState>().WorkingDirectory,
+    sp.GetRequiredService<IShellEnvironment>()));
 services.AddSingleton(sp => new LineEditor(
     () => sp.GetRequiredService<HistoryStore>().Entries,
-    line => CompletionsFor(sp, line)));
+    line => sp.GetRequiredService<CompletionProvider>().Complete(line)));
 services.AddSingleton(new IconProvider(settings.Icons));
 services.AddSingleton(sp => new PromptRenderer(
     sp.GetRequiredService<ThemeManager>(),
@@ -96,31 +100,3 @@ ConsoleCancelEventHandler cancelHandler = (_, e) =>
 Console.CancelKeyPress += cancelHandler;
 try { return await shell.RunAsync(CancellationToken.None); }
 finally { Console.CancelKeyPress -= cancelHandler; }
-
-static string[] CompletionsFor(IServiceProvider sp, string line)
-{
-    var builtins = sp.GetServices<IBuiltinCommand>().Select(b => b.Name);
-    if (!line.Contains(' '))
-    {
-        return builtins.Where(n => n.StartsWith(line, StringComparison.OrdinalIgnoreCase)).ToArray();
-    }
-
-    // Autocompleta rutas del último argumento.
-    var prefix = line.Split(' ')[^1];
-    var dirPart = Path.GetDirectoryName(prefix);
-    var baseDir = string.IsNullOrEmpty(dirPart) ? Environment.CurrentDirectory : Path.GetFullPath(dirPart, Environment.CurrentDirectory);
-    var filePart = Path.GetFileName(prefix);
-
-    try
-    {
-        return Directory.EnumerateFileSystemEntries(baseDir, filePart + "*")
-            .Select(Path.GetFileName)
-            .OfType<string>()
-            .Take(20)
-            .ToArray();
-    }
-    catch (Exception ex) when (ex is DirectoryNotFoundException or IOException or UnauthorizedAccessException)
-    {
-        return [];
-    }
-}

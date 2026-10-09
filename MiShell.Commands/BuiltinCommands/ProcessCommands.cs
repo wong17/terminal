@@ -80,56 +80,60 @@ public sealed class PsCommand(IOutputRenderer renderer) : IBuiltinCommand
     }
 }
 
+
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-public sealed class SysInfoCommand(IOutputRenderer renderer) : IBuiltinCommand
+public sealed class SysInfoCommand(
+    IOutputRenderer renderer,
+    Func<CancellationToken, Task<double>>? cpuSampler = null,
+    Func<(double Total, double Available)>? ramQuery = null) : IBuiltinCommand
 {
     public string Name => "sysinfo";
-
     public string Description => "Panel con uso de CPU, RAM y disco.";
 
-    public Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
+    public async Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
     {
         try
         {
-            double cpuPercent = SampleCpuPercent();
-            double ramTotalMb = QueryTotalRamMb();
-            double ramAvailableMb = QueryAvailableRamMb();
-            double diskTotalGb, diskUsedGb;
+            cancellationToken.ThrowIfCancellationRequested();
+            var cpuPercent = await (cpuSampler ?? SampleCpuPercentAsync)(cancellationToken).ConfigureAwait(false);
+            var (ramTotalMb, ramAvailableMb) = (ramQuery ?? QueryRamMb)();
+            cancellationToken.ThrowIfCancellationRequested();
             var drive = new DriveInfo(Path.GetPathRoot(context.WorkingDirectory) ?? "C:\\");
             const double bytesPerGb = 1024.0 * 1024.0 * 1024.0;
-            diskTotalGb = drive.TotalSize / bytesPerGb;
-            diskUsedGb = (drive.TotalSize - drive.AvailableFreeSpace) / bytesPerGb;
-
+            var diskTotalGb = drive.TotalSize / bytesPerGb;
+            var diskUsedGb = (drive.TotalSize - drive.AvailableFreeSpace) / bytesPerGb;
             renderer.RenderSystemInfo(new SystemUsage(cpuPercent, ramTotalMb - ramAvailableMb, ramTotalMb, diskUsedGb, diskTotalGb));
             renderer.WriteInfo($"CPU: {cpuPercent:F1}%; RAM libre: {ramAvailableMb:F0} MiB; disco libre: {diskTotalGb - diskUsedGb:F1} GiB.");
             renderer.WriteInfo($"Disco consultado: {Path.GetPathRoot(context.WorkingDirectory)}. CPU es una muestra de 300 ms; RAM y disco son instantáneas.");
-            return Task.FromResult(CommandResult.Ok);
+            return CommandResult.Ok;
         }
         catch (Exception ex) when (ex is System.Management.ManagementException or System.ComponentModel.Win32Exception
             or InvalidOperationException or UnauthorizedAccessException or IOException)
         {
             renderer.WriteError($"No se pudieron consultar los recursos de Windows: {ex.Message}");
-            return Task.FromResult(CommandResult.Failure);
+            return CommandResult.Failure;
         }
     }
 
-    private static double SampleCpuPercent()
+    private static async Task<double> SampleCpuPercentAsync(CancellationToken token)
     {
         using var cpu = new PerformanceCounter("Processor", "% Processor Time", "_Total", readOnly: true);
-        _ = cpu.NextValue(); // Primera lectura siempre es 0; se descarta.
-        Thread.Sleep(300);
+        _ = cpu.NextValue();
+        await Task.Delay(300, token).ConfigureAwait(false);
         return Math.Clamp(cpu.NextValue(), 0, 100);
     }
 
-    private static double QueryTotalRamMb()
+    private static (double Total, double Available) QueryRamMb()
     {
-        using var query = new System.Management.ManagementObjectSearcher("SELECT TotalVisibleMemorySize FROM Win32_OperatingSystem");
-        return query.Get().Cast<System.Management.ManagementBaseObject>().Select(item => Convert.ToDouble(item["TotalVisibleMemorySize"], CultureInfo.InvariantCulture) / 1024.0).FirstOrDefault();
-    }
-
-    private static double QueryAvailableRamMb()
-    {
-        using var query = new System.Management.ManagementObjectSearcher("SELECT FreePhysicalMemory FROM Win32_OperatingSystem");
-        return query.Get().Cast<System.Management.ManagementBaseObject>().Select(item => Convert.ToDouble(item["FreePhysicalMemory"], CultureInfo.InvariantCulture) / 1024.0).FirstOrDefault();
+        using var query = new System.Management.ManagementObjectSearcher(
+            "SELECT TotalVisibleMemorySize, FreePhysicalMemory FROM Win32_OperatingSystem");
+        using var results = query.Get();
+        foreach (System.Management.ManagementBaseObject item in results)
+        {
+            using (item)
+                return (Convert.ToDouble(item["TotalVisibleMemorySize"], CultureInfo.InvariantCulture) / 1024.0,
+                    Convert.ToDouble(item["FreePhysicalMemory"], CultureInfo.InvariantCulture) / 1024.0);
+        }
+        throw new InvalidOperationException("WMI no devolvió información de memoria.");
     }
 }

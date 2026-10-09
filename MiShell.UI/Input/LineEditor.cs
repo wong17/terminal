@@ -43,6 +43,12 @@ public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func
         while (true)
         {
             var key = Console.ReadKey(intercept: true);
+            var currentWidth = Math.Max(MinUsableWidth, SafeWindowWidth());
+            if (currentWidth != width)
+            {
+                width = currentWidth;
+                cursorRow = RowOf(prefixWidth + PromptRenderer.VisibleWidth(buffer.ToString()[..cursor]), width);
+            }
             if (key.Modifiers.HasFlag(ConsoleModifiers.Control) && key.Key is ConsoleKey.C or ConsoleKey.Z)
             {
                 Console.WriteLine();
@@ -144,7 +150,7 @@ public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func
 
         void ShowCompletions()
         {
-            var candidates = completionProvider(buffer.ToString());
+            var candidates = completionProvider(buffer.ToString()[..cursor]);
             switch (candidates.Length)
             {
                 case 1:
@@ -158,10 +164,9 @@ public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func
 
         void CompleteWith(string completion)
         {
-            var text = buffer.ToString();
-            var lastSpace = text.LastIndexOf(' ');
-            _ = buffer.Clear().Append(text[..(lastSpace + 1)]).Append(completion);
-            cursor = buffer.Length;
+            var suffix = buffer.ToString()[cursor..];
+            _ = buffer.Clear().Append(completion).Append(suffix);
+            cursor = completion.Length;
             Refresh();
         }
 
@@ -178,7 +183,7 @@ public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func
         void RewriteBuffer()
         {
             Console.Write(buffer);
-            var end = prefixWidth + buffer.Length;
+            var end = prefixWidth + PromptRenderer.VisibleWidth(buffer.ToString());
             cursorRow = RowOf(end, width);
             cursorCol = ColOf(end, width);
             if (end > 0 && end % width == 0)
@@ -188,7 +193,7 @@ public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func
                 Console.Write("\x1b[1B");
             }
 
-            MoveCursorTo(prefixWidth + cursor, width);
+            MoveCursorTo(prefixWidth + PromptRenderer.VisibleWidth(buffer.ToString()[..cursor]), width);
         }
 
         void Refresh()
