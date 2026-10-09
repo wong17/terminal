@@ -74,3 +74,11 @@ Ctrl+C cancela el comando, solicita terminar sus árboles de procesos y mantiene
 ## Fuente de la consigna
 
 `Propuesta #1.pdf`, pp. 1-6, documento local de clase usado en la matriz. No se redistribuye. Las páginas de Microsoft enlazadas respaldan la explicación del modelo Windows/.NET; no resuelven la contradicción académica del lenguaje.
+
+## Cierre de opciones y errores
+
+CompletionProvider consulta el PATH vigente sin índice permanente y conserva prefijos y comillas. LineEditor reemplaza el texto anterior al cursor conservando el sufijo; recalcula el ancho cuando detecta un cambio de ventana.
+
+sysinfo usa una espera cancelable y una consulta WMI para ambos valores de RAM. Los errores de recursos se explican y devuelven código 1.
+
+ShellExecutor valida entrada y salida antes de abrir stdout. Una copia fallida cancela la espera y termina los procesos; la tarea del job conserva la causa. jobs muestra estado y resultado, fg elimina el trabajo incluso ante fallos y las notificaciones distinguen código 0 de error.

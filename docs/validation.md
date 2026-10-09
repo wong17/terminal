@@ -9,9 +9,9 @@ Ejecutada el **8 de octubre de 2026 (America/Guatemala)**. Windows 10, versión 
 | Build inicial Debug | 0 errores, 0 advertencias |
 | Suite inicial | 14 aprobadas, 0 fallidas |
 | Build completo final Release | 0 errores, 0 advertencias |
-| Suite final Release | **61 aprobadas, 0 fallidas, 0 omitidas** |
+| Suite final Release | **72 aprobadas, 0 fallidas, 0 omitidas** |
 | Demo aislada con `-IncludeSystemInfo` | **11/11 comprobaciones aprobadas**, salida de error vacía |
-| Edición en pseudoterminal | Tab completó `pwd`; flecha arriba recuperó una orden; escritura/Enter conservaron el prompt |
+| Edición en pseudoterminal | Tab completó pwd y una ruta entre comillas con espacios; flecha arriba recuperó una orden; clear, temas, orden larga y Ctrl+Z funcionaron |
 | Ctrl+C en pseudoterminal | Canceló `Start-Sleep -Seconds 30`, mostró código 130 y permitió ejecutar otra orden |
 | Diff | `git diff --check` sin problemas |
 
@@ -56,4 +56,16 @@ Para repetir solo la demo tras compilar: `pwsh -File .\scripts\verify.ps1 -SkipB
 
 ## Límites de la evidencia
 
-Quedan revisión visual presencial, autocompletado avanzado, ACL/permisos exhaustivos, todos los casos de procesos descendientes, aceptación del lenguaje por el docente, documento impreso y participación de los integrantes. No se ejecutaron pruebas Linux/POSIX ni se afirma que la API de Windows invoque literalmente `fork`/`exec`/`wait`.
+El docente aceptó C# según la confirmación del equipo. La verificación se limita a Windows en este equipo; no acredita todas las ACL, procesos descendientes o paletas posibles. La exposición, asistencia, impresión física y evaluación corresponden al curso.
+
+## Cierre del plan
+
+- E/S: rechaza entrada/salida iguales y destinos duplicados sin pérdida de datos; archivo bloqueado y ACL de escritura denegada comprobados sobre temporales propios.
+- Background: un escritor simulado falla mientras un proceso real sigue activo; el proceso termina, la causa se conserva y fg libera el job.
+- Tab: rutas con espacios/comillas y PATH actualizado comprobados en pruebas; ruta real completada en pseudoterminal.
+- sysinfo: cancelación durante muestreo, recursos indisponibles y consulta real satisfactoria.
+- Informe oficial actualizado, índice recalculado con Word y páginas renderizadas revisadas.
+
+Las figuras representan transcripciones de sesiones reales aisladas, separando stdout y stderr; no son capturas de Windows Terminal. El renderizador no encontró LibreOffice: Word actualizó campos y exportó la QA, y pypdfium2 generó las páginas revisadas. La portada y convenciones institucionales se preservaron.
+
+Se corrigió la referencia de stderr a [StreamReader.ReadLineAsync](https://learn.microsoft.com/en-us/dotnet/api/system.io.streamreader.readlineasync?view=net-10.0), empleado por el código actual.

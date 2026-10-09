@@ -51,15 +51,15 @@ set SALUDO="Hola mundo"
 echo $SALUDO
 ```
 
-- `>` reemplaza el archivo; `>>` añade contenido; `<` lee entrada. Se admite una entrada y una salida por comando.
+- `>` reemplaza el archivo; `>>` añade contenido; `<` lee entrada. Se admite una entrada y una salida por comando. Se rechaza escribir sobre el archivo de entrada o usar dos destinos iguales en una tubería.
 - Las tuberías y `&` conectan **programas externos**. Los internos admiten salida a archivo; `cat`/`type` también entrada desde archivo. `echo Hola | findstr Hola` se rechaza con una explicación.
-- `&` solo puede terminar una tubería; no se combina con `&&`/`||`. `fg` espera toda la tubería y devuelve el código del último proceso.
+- `&` solo puede terminar una tubería; no se combina con `&&`/`||`. `fg` espera toda la tubería y devuelve el código del último proceso. Los trabajos fallidos muestran código o causa; un fallo de transferencia termina los procesos y libera sus flujos.
 - `kill %1` identifica un job; `kill 1234` identifica un PID. Salir cierra los trabajos que todavía pertenecen a MiShell.
 - `&&`/`||` condicionan la ejecución según el código previo. Las variables se expanden al analizar la línea: define y utiliza una variable en líneas separadas.
 - Las comillas dobles expanden variables; las simples conservan texto literal. No se implementa el lenguaje completo de Bash, escape con barra invertida, comodines ni sustitución de comandos.
 - `.cmd`/`.bat` requieren `cmd.exe /c archivo.cmd`; `.ps1` requiere `powershell.exe -File archivo.ps1`.
 - `source` ejecuta líneas y comentarios completos `#`; reporta archivo/línea y conserva un código de fallo si alguna línea falla.
-- Ctrl+C cancela el comando actual; mientras escribes, borra esa entrada. Ctrl+Z o EOF termina la sesión. Flechas recuperan el historial y Tab completa nombres internos y rutas sencillas. El autocompletado de PATH y rutas entre comillas queda en el plan.
+- Ctrl+C cancela el comando actual; mientras escribes, borra esa entrada. Ctrl+Z o EOF termina la sesión. Flechas recuperan el historial. Tab completa internos, ejecutables del PATH vigente y rutas con espacios, conservando prefijos y comillas; también conserva el texto posterior al cursor.
 
 Configuración e historial se guardan en `%APPDATA%\MiShell`. `MISHELL_DATA_DIR` permite usar un perfil separado, como hacen las pruebas. Las órdenes introducidas se guardan localmente en el historial.
 
@@ -79,7 +79,7 @@ pwsh -File .\scripts\verify.ps1 -IncludeSystemInfo
 
 El script usa una carpeta temporal y un perfil aislado, comprueba archivos y salidas, limita la duración de la demo y guarda resultados en `artifacts/validation/`, excluido de Git. `-SkipBuild` reutiliza una compilación Release ya realizada.
 
-Resultado local del 8 de octubre de 2026: **61 pruebas, 0 fallos; Release con 0 advertencias; demo 11/11**. Consulta los alcances de esa evidencia en [validación](docs/validation.md).
+Resultado local del 8 de octubre de 2026: **72 pruebas, 0 fallos; Release con 0 advertencias; demo 11/11**. Consulta los alcances de esa evidencia en [validación](docs/validation.md).
 
 ## Organización
 
@@ -98,10 +98,10 @@ Core no referencia Spectre.Console. Commands sí referencia UI y Configuration: 
 
 ## Proyecto de clase
 
-La propuesta permite y recomienda C# para Windows en su primera página, pero luego exige C y `fork`/`exec`/`wait`. MiShell utiliza las APIs de procesos de Windows/.NET y **no invoca esas llamadas POSIX literalmente**. La interpretación académica debe confirmarse; está documentada en [ADR-001](docs/decisions/ADR-001-csharp-windows.md).
+El docente autorizó C#, según la confirmación del equipo del 8 de octubre de 2026. MiShell demuestra procesos mediante Windows/.NET; POSIX se explica como correspondencia conceptual en [ADR-001](docs/decisions/ADR-001-csharp-windows.md).
 
 - [Matriz completa de cumplimiento](PLAN_DE_CUMPLIMIENTO.md)
 - [Explicación técnica del funcionamiento](docs/technical-guide.md)
 - [Demostración y revisión del informe impreso](docs/defense.md)
-- [Plan de pendientes y mejoras acotadas](PLAN.md)
+- [Estado de cierre del plan](PLAN.md)
 - [Limpieza y conservación de archivos históricos](docs/cleanup.md)

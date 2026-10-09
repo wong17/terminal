@@ -34,3 +34,11 @@ Se retiraron los directorios de compilación y caché de la copia de trabajo des
 4. Demo, verificación y documentación.
 
 La publicación usa una rama normal y no sobrescribe historia mediante force push.
+
+## Cierre del segundo lote
+
+Se preservó también el informe oficial original en la subcarpeta closure del respaldo. El informe actualizado permanece en su carpeta de clases; su revisión y hash están en docs/report-review.md.
+
+Los resultados y páginas de QA se trasladaron al respaldo externo después de revisarlos. Se retiraron otra vez bin/obj generados por la validación. Las siguientes compilaciones y verificaciones los regeneran.
+
+Este lote se agrupa en protección de E/S/trabajos, autocompletado/recursos y pruebas/documentación.

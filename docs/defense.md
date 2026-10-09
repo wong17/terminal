@@ -4,7 +4,7 @@ Guía para ejecutar y explicar el proyecto. La defensa y la participación de ca
 
 ## Antes de presentar
 
-1. Confirmar aceptación de C# para Windows frente a C/POSIX literal; consultar ADR-001.
+1. Explicar la elección de C# para Windows autorizada por el docente; consultar ADR-001.
 2. Ejecutar `pwsh -File .\scripts\verify.ps1 -IncludeSystemInfo`.
 3. Elegir `theme contrast` con fondo oscuro o `theme paper` con fondo claro.
 4. En Windows Terminal comprobar fuente, colores, texto/órdenes largas, ventana estrecha, flechas, Tab, Ctrl+C, Ctrl+Z y `clear`.
@@ -47,25 +47,22 @@ exit
 
 Explicar PID, espera en primer plano, conexión stdout/stdin, cierre de etapas y códigos de salida.
 
-## Repartir la explicación
+## Distribución preparada para la defensa
 
-Asignar entre integrantes:
+Usar el orden de integrantes de la portada:
 
-- Lectura, parser, AST, sintaxis y errores.
-- Creación/ejecución/espera y diferencias Windows/POSIX.
-- Pipes, redirecciones, jobs, historial y variables.
-- Pruebas observadas, recursos y límites.
+| Integrante | Parte y demostración | Tiempo orientativo |
+|---|---|---|
+| Primero | Problema, objetivos, lectura, parser, comillas y errores | 3 minutos |
+| Segundo | Creación, ejecución y espera de procesos; pipes y redirecciones | 4 minutos |
+| Tercero | Jobs, cancelación, historial, variables, temas, pruebas y conclusiones | 4 minutos |
 
-La asignación y asistencia deben registrarse por el equipo; no se inventa participación.
+Todos deben explicar una orden desde entrada hasta finalización. Esta distribución prepara la exposición; no acredita participación ya realizada.
 
-## Actualizar el informe impreso
+## Informe actualizado
 
-Conservar el DOCX del respaldo y trabajar sobre una copia. Revisar:
+El informe oficial `Informe_MiShell_APA7_final.docx` está en la carpeta de clases. Se actualizaron arquitectura, jobs, 72 pruebas, build completo, opciones, colores, evidencias, índice y referencias. El original se conserva en el respaldo externo.
 
-1. Jobs de toda la tubería, con tarea que espera procesos y flujos.
-2. Los 61 tests actuales y build completo Release; conservar cifras anteriores solo con sus fechas.
-3. Retirar MSB3491 como bloqueo actual; la compilación completa pasó en esta auditoría.
-4. Ayuda, `ls -l`, `ps`, `kill %id`, temas y redirección de tablas/cat.
-5. Transcripciones actuales y capturas reales, diferenciadas de diagramas e imágenes reconstruidas.
-6. Requisitos, conclusiones, recomendaciones y referencias acordes al código final.
-7. Índice, tablas, figuras, citas y paginación después de exportar. La revisión de texto no valida impresión ni formato visual.
+Las figuras representan transcripciones verificadas; se diferencian de capturas de ventanas. Se preservaron la portada institucional y su fecha histórica; el cuerpo identifica la fecha de actualización.
+
+El plan de preparación está cerrado. Para presentar, utilizar la verificación reproducible y el recorrido anterior.
