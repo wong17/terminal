@@ -1,28 +1,36 @@
-# Demostración reproducible de MiShell en Windows.
-# Ejecutar desde la raíz con: source demo.mish
-
+# Demo de clase para Windows. Ejecutar: source demo.mish
+# Crea únicamente .mish-demo bajo el directorio de inicio; no elimina archivos.
 pwd
-ls
+ls -l
 mkdir .mish-demo
 cd .mish-demo
+mkdir proyecto
+cd proyecto
 pwd
+echo Hola
+cd ..
 
-# Redirección de salida y anexado.
+# > trunca y >> añade. cat/type también pueden leer stdin con <.
 echo Hola desde MiShell > saludo.txt
-echo Segunda línea >> saludo.txt
-type saludo.txt
+echo Segunda linea >> saludo.txt
+cat < saludo.txt
 
-# Proceso externo y tubería usando herramientas disponibles en Windows.
+# Creación/ejecución/espera de procesos y pipes externos.
 cmd.exe /c "echo Hola desde un proceso externo" | findstr.exe Hola
-findstr.exe Hola < saludo.txt
+findstr.exe Hola < saludo.txt > filtrado.txt
+type filtrado.txt
+cmd.exe /c "dir /b" | findstr.exe .txt > listado.txt
+type listado.txt
 
-# Variable de entorno expandida por el parser.
-set DEMO=Windows
+set DEMO="Windows desde MiShell"
 echo Plataforma: $DEMO
+echo 'Texto literal: $DEMO | < > &'
 
-# Proceso en segundo plano y espera explícita.
-cmd.exe /c "ping 127.0.0.1 -n 2" &
+# El job conserva toda la tubería hasta finalizar; fg espera también los flujos.
+powershell.exe -NoProfile -Command "Start-Sleep -Milliseconds 600; 'trabajo terminado'" | findstr.exe terminado > trabajo.txt &
 jobs
 fg 1
-
+type trabajo.txt
+help syntax
 cd ..
+# La demo conserva la sesión abierta. Ejecutar exit durante la defensa.

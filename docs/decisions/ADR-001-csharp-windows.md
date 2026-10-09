@@ -2,11 +2,11 @@
 
 ## Estado
 
-Aceptado con verificación pendiente del criterio literal “Código en C”.
+Decisión técnica vigente; aceptación académica del criterio literal “Código en C” no confirmada.
 
 ## Fecha
 
-2026-09-10
+2026-09-10. Revisado: 2026-10-08.
 
 ## Contexto
 
@@ -41,7 +41,9 @@ Rechazo actual: `PerformanceCounter` y `System.Management` se han diseñado para
 
 ## Consecuencias
 
-- El shell cumple la intención funcional de procesos, espera, pipes y redirecciones en Windows.
+- La auditoría de octubre verifica creación, espera, pipes y redirecciones en Windows dentro del subconjunto del README.
+- La aceptación académica de C# sigue pendiente; no se declara cumplimiento literal de los criterios C/POSIX.
+- Jobs conserva todas las etapas y sus flujos hasta finalizar; fg devuelve el código de la última etapa.
 - La defensa debe explicar `CreateProcess`/`Process.Start` como la correspondencia de Windows, no como una llamada POSIX literal.
 - Existe un riesgo académico residual si el docente exige literalmente código C pese a la lista de lenguajes permitidos; debe confirmarse antes de imprimir.
 - El README, la matriz de cumplimiento y el documento técnico deben conservar esta distinción.

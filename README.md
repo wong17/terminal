@@ -1,82 +1,107 @@
 # MiShell
 
-MiShell es un shell educativo para Windows desarrollado en C# y .NET 10. Su objetivo es mostrar, de forma visible, la relación entre el usuario, el intérprete de comandos, los procesos, los flujos de entrada/salida y los recursos del sistema operativo.
+Shell educativo de Windows escrito en C#/.NET 10. Ejecuta comandos internos y programas externos, conecta sus flujos de entrada/salida y administra trabajos básicos.
 
 ## Inicio rápido
 
-Requisitos:
-
-- Windows 10/11.
-- .NET 10 SDK.
-
-Desde la raíz del proyecto:
+Requiere Windows 10/11 y el SDK de .NET 10. Para la interfaz interactiva se recomienda Windows Terminal. PowerShell 7 permite ejecutar la verificación del repositorio.
 
 ```powershell
 dotnet run --project .\MiShell.App\MiShell.App.csproj
 ```
 
-Dentro del shell se puede ejecutar la demostración completa con:
+Dentro de MiShell:
 
 ```text
+help
+help ps
+help syntax
+ls -l
+ps 10 --name dotnet --sort ram
+theme contrast
 source demo.mish
+exit
 ```
 
-El script usa `cmd.exe` y `findstr.exe` para mostrar procesos externos y tuberías con herramientas disponibles en Windows.
+La demo crea `.mish-demo` en el directorio inicial y conserva la sesión abierta. Usa ejecutables de Windows (`cmd.exe`, `findstr.exe`, `powershell.exe`); no requiere herramientas de Unix.
+
+## Colores y lectura
+
+| Opción | Uso |
+|---|---|
+| `theme contrast` | Fondo oscuro; texto principal blanco, secundario gris claro y acento cian. Predeterminado para perfiles nuevos. |
+| `theme paper` | Fondo claro; texto oscuro y acento azul. |
+| `theme plain` | Texto sin color, tablas simples y sin animación de bienvenida. |
+| `theme list` | Consulta todos los temas; se conservan dracula, synthwave, crt y minimal. |
+
+Los temas no cambian el fondo de tu terminal. El resultado depende de la paleta y fuente configuradas allí; el color se acompaña de texto, símbolos y códigos. La preferencia existente del usuario se conserva. `NO_COLOR=1` desactiva el color de MiShell; los programas externos conservan su propio comportamiento. Los archivos redirigidos no reciben colores ni bordes.
+
+## Sintaxis y límites
+
+```text
+echo Hola > saludo.txt
+echo Otra linea >> saludo.txt
+cat < saludo.txt
+cmd.exe /c echo Hola | findstr.exe Hola > coincidencias.txt
+powershell.exe -NoProfile -Command "Start-Sleep -Seconds 2" &
+jobs
+fg 1
+kill %1
+set SALUDO="Hola mundo"
+echo $SALUDO
+```
+
+- `>` reemplaza el archivo; `>>` añade contenido; `<` lee entrada. Se admite una entrada y una salida por comando.
+- Las tuberías y `&` conectan **programas externos**. Los internos admiten salida a archivo; `cat`/`type` también entrada desde archivo. `echo Hola | findstr Hola` se rechaza con una explicación.
+- `&` solo puede terminar una tubería; no se combina con `&&`/`||`. `fg` espera toda la tubería y devuelve el código del último proceso.
+- `kill %1` identifica un job; `kill 1234` identifica un PID. Salir cierra los trabajos que todavía pertenecen a MiShell.
+- `&&`/`||` condicionan la ejecución según el código previo. Las variables se expanden al analizar la línea: define y utiliza una variable en líneas separadas.
+- Las comillas dobles expanden variables; las simples conservan texto literal. No se implementa el lenguaje completo de Bash, escape con barra invertida, comodines ni sustitución de comandos.
+- `.cmd`/`.bat` requieren `cmd.exe /c archivo.cmd`; `.ps1` requiere `powershell.exe -File archivo.ps1`.
+- `source` ejecuta líneas y comentarios completos `#`; reporta archivo/línea y conserva un código de fallo si alguna línea falla.
+- Ctrl+C cancela el comando actual; mientras escribes, borra esa entrada. Ctrl+Z o EOF termina la sesión. Flechas recuperan el historial y Tab completa nombres internos y rutas sencillas. El autocompletado de PATH y rutas entre comillas queda en el plan.
+
+Configuración e historial se guardan en `%APPDATA%\MiShell`. `MISHELL_DATA_DIR` permite usar un perfil separado, como hacen las pruebas. Las órdenes introducidas se guardan localmente en el historial.
 
 ## Verificación
 
 ```powershell
-dotnet build .\MiShell.slnx
-dotnet test .\MiShell.slnx
+dotnet build MiShell.slnx -c Release
+dotnet test MiShell.slnx -c Release
+pwsh -File .\scripts\verify.ps1
 ```
 
-## Funcionalidades
+Para comprobar además los contadores y WMI del equipo:
 
-### Requeridas
+```powershell
+pwsh -File .\scripts\verify.ps1 -IncludeSystemInfo
+```
 
-- Prompt y lectura de comandos.
-- Comandos externos mediante `System.Diagnostics.Process`.
-- `cd`, `pwd`, `clear`, `cls` y `exit`.
-- Manejo de errores de sintaxis, comandos inexistentes, rutas y permisos.
-- Manejo de directorios con `ls`, `dir` y `mkdir`.
+El script usa una carpeta temporal y un perfil aislado, comprueba archivos y salidas, limita la duración de la demo y guarda resultados en `artifacts/validation/`, excluido de Git. `-SkipBuild` reutiliza una compilación Release ya realizada.
 
-### Adicionales
+Resultado local del 8 de octubre de 2026: **61 pruebas, 0 fallos; Release con 0 advertencias; demo 11/11**. Consulta los alcances de esa evidencia en [validación](docs/validation.md).
 
-- Redirección de entrada `<` y salida `>` / `>>`.
-- Tuberías `|` entre procesos externos.
-- Segundo plano `&`, consulta `jobs`, espera `fg` y terminación `kill`.
-- Historial persistente y navegación con las flechas arriba/abajo.
-- Variables de entorno con `set NOMBRE=valor` y expansión `$NOMBRE`.
-- Scripts `.mish` mediante `source archivo.mish`; las líneas que comienzan con `#` son comentarios.
-- `ps`, `ps --chart`, `sysinfo`, temas, banner y autocompletado.
-
-## Arquitectura
+## Organización
 
 ```text
-MiShell.Core/             Parser, AST, ejecución, jobs, historial y contratos
+MiShell.Core/             Parser, AST, procesos, jobs, historial y contratos
 MiShell.Commands/         Comandos internos, archivos, procesos y scripts
 MiShell.UI/               Prompt, editor de línea, temas y Spectre.Console
 MiShell.Configuration/    Configuración persistente
-MiShell.App/              Composición de servicios y ciclo REPL
-MiShell.Core.Tests/       Pruebas del parser, historial y tabla de jobs
+MiShell.App/              Registro de servicios y ciclo REPL
+MiShell.Core.Tests/       Pruebas unitarias, integración de procesos y sesiones
+scripts/                 Verificación reproducible
+docs/                    Cumplimiento, explicación técnica y defensa
 ```
 
-Los comandos internos implementan `IBuiltinCommand`. El núcleo no depende de Spectre.Console: toda salida pasa por `IOutputRenderer`. La decisión de usar C#/.NET sobre Windows y la correspondencia con los conceptos POSIX de la consigna están registradas en [ADR-001](docs/decisions/ADR-001-csharp-windows.md).
+Core no referencia Spectre.Console. Commands sí referencia UI y Configuration: la solución separa responsabilidades por proyectos, sin imponer una arquitectura nueva.
 
-## Correspondencia con la consigna
+## Proyecto de clase
 
-La propuesta menciona `fork()`, `exec()` y `wait()/waitpid()` porque describe el modelo POSIX. En Windows, MiShell usa las APIs equivalentes de .NET:
+La propuesta permite y recomienda C# para Windows en su primera página, pero luego exige C y `fork`/`exec`/`wait`. MiShell utiliza las APIs de procesos de Windows/.NET y **no invoca esas llamadas POSIX literalmente**. La interpretación académica debe confirmarse; está documentada en [ADR-001](docs/decisions/ADR-001-csharp-windows.md).
 
-| Concepto de la propuesta | Implementación de MiShell |
-|---|---|
-| Crear proceso / `fork()` conceptual | `Process.Start` sobre Windows `CreateProcess` |
-| Ejecutar programa / `exec()` conceptual | `ProcessStartInfo` + `Process.Start` |
-| Esperar / `wait()` o `waitpid()` conceptual | `WaitForExitAsync` |
-| Pipes | `RedirectStandardInput` / `RedirectStandardOutput` y copia entre streams |
-| Terminar proceso | `Process.Kill` |
-
-No se afirma que C# invoque literalmente `fork()` en Windows. Esta distinción debe explicarse durante la defensa; si el docente exige código C POSIX literal, habría que cambiar el backend o confirmar formalmente la aceptación de la opción C# recomendada en la propuesta.
-
-## Plan de cierre
-
-La matriz completa, con requisitos obligatorios, extras, evidencias y pendientes del documento técnico, está en [PLAN_DE_CUMPLIMIENTO.md](PLAN_DE_CUMPLIMIENTO.md).
+- [Matriz completa de cumplimiento](PLAN_DE_CUMPLIMIENTO.md)
+- [Explicación técnica del funcionamiento](docs/technical-guide.md)
+- [Demostración y revisión del informe impreso](docs/defense.md)
+- [Plan de pendientes y mejoras acotadas](PLAN.md)
+- [Limpieza y conservación de archivos históricos](docs/cleanup.md)

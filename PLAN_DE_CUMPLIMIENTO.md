@@ -1,133 +1,84 @@
-# Plan de cumplimiento - Desarrollo de un Shell Simple
+# Auditoría de cumplimiento de la propuesta de clase
 
-Fecha de auditoría: 10 de septiembre de 2026.
+Revisión del **8 de octubre de 2026**, contra `Propuesta #1.pdf`, seis páginas, del curso Arquitectura de Sistemas Operativos. Las instrucciones del PDF se usan como criterios del trabajo solicitado; sus fechas históricas no programan acciones nuevas.
 
-Este archivo es el plan de preparación del proyecto. No es todavía el documento técnico impreso del entregable 1.
+**Resultado:** la versión C# para Windows demuestra las funciones obligatorias y los extras indicados, dentro del subconjunto descrito abajo. Quedan por cerrar la interpretación C/POSIX de la rúbrica, la puesta al día del documento impreso y la defensa/inspección visual. Esta matriz no concede una calificación ni sustituye al docente.
 
-## 1. Fuentes y alcance
+## 1. Requisitos del programa
 
-### Requisitos de la propuesta adjunta
-
-La fuente es `Propuesta #1.pdf` (6 páginas), especialmente:
-
-- Páginas 1-3: objetivo, entregables, requisitos mínimos, extras y demostración.
-- Página 4: rúbrica del documento técnico.
-- Página 5: rúbrica del shell funcional y defensa.
-- Página 6: prioridad conceptual Usuario -> Shell -> llamadas al sistema -> kernel -> procesos -> recursos.
-
-La propuesta exige:
-
-1. Documento técnico con portada, introducción, objetivos, justificación, marco teórico, requisitos, diseño, comandos, llamadas al sistema, diagrama, pruebas, conclusiones, recomendaciones y bibliografía.
-2. Shell funcional con prompt, lectura de comandos, comandos externos, `cd`, `pwd`, `clear`, `exit`, creación/ejecución/espera de procesos, errores básicos y manejo de directorios.
-3. Como ampliación: `<`, `>`, `>>`, pipes, segundo plano, historial, variables de entorno y scripts simples.
-4. Demostración de navegación, creación de directorio, `echo`, salida, proceso externo, espera y una tubería.
-5. Participación de cada integrante y explicación de la interacción con el sistema operativo.
-
-### Decisiones del usuario
-
-- Lenguaje: C#.
-- Plataforma: Windows.
-- Prioridad: cerrar primero el shell y sus evidencias; elaborar el documento técnico después.
-
-## 2. Conflicto de lenguaje y decisión
-
-La propuesta contiene dos instrucciones distintas: en la página 1 permite C# (.NET), Java, Python o C++ y recomienda C# para Windows; en las páginas 2 y 5 también dice “lenguaje C” y califica “Código en C”. Además, pide `fork()`, `exec()` y `wait()`, que son nombres POSIX y no llamadas literales de Windows.
-
-Decisión adoptada: conservar C#/.NET sobre Windows porque está permitido y recomendado en la misma propuesta. La implementación explicará las equivalencias de Windows y no presentará `Process.Start` como una llamada literal a `fork()` o `exec()`. El único riesgo externo que queda es que el docente interprete literalmente la frase “código en C”; antes de imprimir, conviene confirmar esa interpretación.
-
-## 3. Matriz de cumplimiento del proyecto
-
-### 3.1 Requisitos mínimos del shell
-
-| Requisito | Estado | Evidencia |
+| Criterio y página | Estado y alcance | Evidencia actual |
 |---|---|---|
-| Mostrar prompt | Cumple | `MiShell.UI/Prompt/PromptRenderer.cs`; banner y prompt en ejecución |
-| Leer comandos | Cumple | `MiShell.UI/Input/LineEditor.cs`; modo interactivo y entrada redirigida |
-| Ejecutar comandos externos | Cumple | `MiShell.Core/Execution/ShellExecutor.cs`; `ProcessStartInfo` + `Process.Start` |
-| `cd` | Cumple | `MiShell.Commands/BuiltinCommands/NavigationCommands.cs` |
-| `pwd` | Cumple | `MiShell.Commands/BuiltinCommands/NavigationCommands.cs` |
-| `clear` | Cumple | Alias añadido; en salida redirigida no aborta la sesión |
-| `exit` | Cumple | `MiShell.Commands/BuiltinCommands/InfoCommands.cs` |
-| Crear proceso | Cumple conceptualmente en Windows | `Process.Start`, equivalente de Windows a la creación de procesos |
-| Ejecutar programa | Cumple conceptualmente en Windows | `ProcessStartInfo` + `Process.Start` |
-| Esperar proceso | Cumple conceptualmente en Windows | `WaitForExitAsync` y `fg` |
-| Manejar errores básicos | Cumple | errores de sintaxis, comando no encontrado, rutas, permisos y persistencia no disponible |
-| Manejo de directorios | Cumple | `cd`, `pwd`, `ls`, `dir`, `mkdir` |
+| Objetivo: interacción usuario/SO y procesos (p. 1, 6) | Implementado en Windows | Flujo en `docs/technical-guide.md`; demo con procesos reales |
+| Prompt (p. 2) | Funcional; aspecto final pendiente en Windows Terminal | `PromptRenderer`, sesión en pseudoterminal |
+| Leer comandos (p. 2) | Implementado, incluidos EOF y cancelación de entrada | `LineEditor`, `SessionTests`, pseudoterminal |
+| Ejecutar externos (p. 2) | PATH/rutas y argumentos; scripts del SO usan su intérprete | `ExecutableResolver`, `ShellExecutor`, `ExecutionTests` |
+| `cd` y directorios (p. 2-3) | Implementado; cambio relativo usado en la demo | `NavigationCommands`, `demo.mish`, verificación del directorio final |
+| `pwd` (p. 2-3) | Implementado; salida a archivo comprobada | `PwdCommand`, comprobación `WorkingDirectory` |
+| `clear` (p. 2) | Disponible; seguro con salida redirigida. Limpieza visual interactiva pendiente | `ClearCommand`, `SpectreRenderer.ClearScreen`, verificación |
+| `exit` (p. 2-3) | Implementado; código opcional y detención de encadenamientos | `ExitStopsRemainingChainedCommands`, `SessionTests` |
+| Crear procesos / `fork()` (p. 2-3, 5) | Creación real con `Process.Start`; **no cumplimiento POSIX literal** | `ShellExecutor`; confirmar C# según ADR-001 |
+| Ejecutar programas / `exec()` (p. 2-3, 5) | Programas reales con `ProcessStartInfo`; **no reemplazo POSIX del proceso actual** | Tuberías `cmd`/`findstr`; ADR-001 |
+| Espera / `wait()`/`waitpid()` (p. 2-3, 5) | Espera con `WaitForExitAsync` y finalización de flujos | Pruebas foreground/background y `fg`; no llamadas POSIX literales |
+| Errores básicos (p. 2, 5) | Sintaxis, comando inexistente, rutas/archivos faltantes, opciones inválidas y jobs inexistentes | Parser, sesiones e integración; mensajes de permisos en código. No se probaron todas las ACL |
+| `ls`, `mkdir`, `echo`, navegación (p. 3) | Implementados; `ls -l` añade datos sin cálculo recursivo | Demo desde carpeta temporal |
+| Finalizar procesos (p. 1) | `kill %job`, PID o prefijo; solicita terminar árboles de procesos del job | `ExplicitJobIdKillsTheEntirePipeline`; no prueba exhaustiva de descendientes |
 
-### 3.2 Funcionalidades adicionales
+## 2. Extras y rúbrica de E/S
 
-| Funcionalidad | Estado | Evidencia |
+Aunque p. 3 los presenta como adicionales, p. 5 califica redirección y pipes: se conservan y se prueban.
+
+| Función | Estado y límites | Evidencia |
 |---|---|---|
-| Redirección `<` | Cumple | copia archivo a `StandardInput` |
-| Redirección `>` | Cumple | archivo truncado y conectado a `StandardOutput` |
-| Redirección `>>` | Cumple | archivo abierto en modo append |
-| Pipes `\|` | Cumple | conexión de streams entre procesos externos |
-| Segundo plano `&` | Cumple | `JobTable`, `jobs`, `fg`, `kill` |
-| Historial | Cumple | JSON en `%APPDATA%\MiShell`; falla de persistencia no termina el shell |
-| Variables de entorno | Cumple | `set` y expansión `$NOMBRE` |
-| Scripts simples | Cumple | `source archivo.mish`, comentarios de línea `#` |
+| `<` | Externos y `cat`/`type`; otros internos comunican que no leen stdin | Pruebas de stdin y stdout simultáneos |
+| `>` y `>>` | Externos e internos, incluidas tablas; archivos sin ANSI | Contenido real, truncado/anexado y tabla redirigida |
+| `\|` | Programas externos; internos rechazados explícitamente | Tres etapas y cierre anticipado del consumidor |
+| `&` | Una tubería externa; conserva todos sus procesos y flujos | `BackgroundPipelineKeepsStreamsAndAllProcessesUntilFg` |
+| Historial | JSON, máximo 500 entradas y flechas | `HistoryStoreTests`, flecha arriba en pseudoterminal |
+| Variables | `set` y expansión al parsear; comillas dobles/simples diferenciadas | Parser, demo y entorno del proceso |
+| Scripts | `source`, comentarios por línea, contexto compartido, ubicación de errores y rechazo de ciclos | `SessionTests` y `source demo.mish` |
+| Recursos visibles | `jobs`, `ps`, gráfico y `sysinfo` | Demo; contadores/WMI consultados en este equipo |
 
-## 4. Evidencias ejecutadas
+Las redirecciones explícitas reemplazan el extremo correspondiente del pipe. Se rechazan redirecciones duplicadas del mismo flujo. No se presenta MiShell como compatible con todo Bash ni con un sistema POSIX.
 
-### Validación estática y automatizada
+## 3. Documento técnico: catorce apartados
 
-| Validación | Resultado |
+El archivo histórico `Propuesta #1 - Shell simple.pdf` es un **informe de 32 páginas**, distinto de la consigna de seis páginas. Se conserva junto con su DOCX en el respaldo externo. La extracción del texto identifica sus apartados; esto no equivale a revisar la paginación final.
+
+| Apartado exigido (p. 2) | Resultado de revisión | Acción pendiente |
+|---|---|---|
+| 1. Portada | Presente con integrantes, curso y docente | Confirmar fecha y datos actuales |
+| 2. Introducción | Presente | Revisar coherencia con alcance final |
+| 3. Objetivos general/específicos | Presentes | Vincular objetivos comprobables a evidencias |
+| 4. Justificación | Presente | Conservar si refleja la asignación del proyecto |
+| 5. Marco teórico | Shell, SO, procesos, llamadas, fork, exec, wait, pipes y E/S presentes | Conservar distinción entre teoría POSIX y código Windows |
+| 6. Requisitos funcionales/no funcionales | Matrices presentes | Reconciliar cobertura y límites de E/S |
+| 7. Diseño/estructura | Presente | Cambiar la descripción que solo guarda el último proceso de un job |
+| 8. Comandos | Tabla presente | Actualizar ayuda, colores, `ls -l`, `ps` y `kill %id` |
+| 9. Llamadas al sistema | Correspondencias presentes | Confirmar interpretación del docente; no declarar fork literal |
+| 10. Diagrama | Presente | Incluir espera/propiedad de todos los procesos y flujos |
+| 11. Pruebas/resultados | Históricos: 14 tests y build completo no verificado por MSB3491 | Usar 61 tests, build completo actual y demo 11/11 |
+| 12. Conclusiones | Presentes | Ajustar a evidencias y pendientes actuales |
+| 13. Recomendaciones | Presentes | Tema según fondo, `help comando` y perfil aislado |
+| 14. Bibliografía | Presente | Revisar citas; `BeginErrorReadLine` ya no describe la lectura actual de stderr |
+
+El informe original se preservó; no se reescribió ni reexportó. `docs/technical-guide.md` y `docs/validation.md` permiten actualizarlo con datos verificables. La impresión, formato final y evaluación académica siguen abiertos.
+
+## 4. Rúbricas y defensa
+
+| Criterio (p. 4-5) | Evidencia / límite |
 |---|---|
-| `dotnet build MiShell.slnx --no-restore` | Correcto, 0 errores y 0 advertencias |
-| `dotnet test MiShell.slnx --no-build --no-restore` | Correcto; pruebas del parser, historial y jobs pasan |
-| Script `demo.mish` | Ejecutado en Windows; comprobó procesos, pipes, redirecciones, variables, jobs y scripts |
-| Smoke test redirigido | Ejecutado; comprobó prompt, navegación, `ls`, `mkdir`, `clear`, lectura de archivo, `exit` y error de comando |
+| Introducción, problema, objetivos, teoría | Apartados en informe; revisión editorial final pendiente |
+| Arquitectura y relación usuario/Shell/kernel | Guía técnica y diagrama; dependencias directas documentadas |
+| Descripción de comandos | README, ayuda específica y tabla del informe a reconciliar |
+| Llamadas al sistema y código en C | Brecha literal reconocida; C# recomendado en p. 1 y exigencia C en p. 2-3, 5 |
+| Interfaz, internos, externos | Demo y pseudoterminal; aspecto final pendiente |
+| Procesos, pipes y E/S | Pruebas reales en Windows; no pruebas POSIX |
+| Errores y pruebas | 61 casos, demo 11 comprobaciones; permisos no exhaustivos |
+| Redacción, formato y bibliografía | Informe conservado; no se revisó visualmente su paginación completa |
+| Demostración y participación | Protocolo en `docs/defense.md`; presentación presencial pendiente |
 
-La primera compilación aislada no pudo restaurar NuGet por falta de red del entorno; al repetir con restauración habilitada, el build terminó correctamente. El resultado válido es el segundo.
+## 5. Evidencia y cierre
 
-### Evidencia que falta preparar para la defensa
+Resultados en [docs/validation.md](docs/validation.md). Pendientes vivos en [PLAN.md](PLAN.md). Los resultados generados quedan en `artifacts/validation`, fuera de Git; las cifras resumen la ejecución realizada.
 
-- Capturas de una sesión interactiva real en Windows Terminal.
-- Captura o salida legible de la demo completa.
-- Tabla de casos de prueba con entrada, resultado esperado, resultado observado y estado.
-- Diagrama Usuario -> MiShell -> .NET/Win32 -> procesos y recursos.
-- Explicación verbal por integrante.
-
-## 5. Plan de cierre por fases
-
-### Fase A - Proyecto funcional
-
-- [x] Corregir persistencia de historial/configuración sin permisos.
-- [x] Implementar `clear` y aliases útiles para Windows.
-- [x] Añadir `mkdir`, lectura de archivos y comandos de demostración.
-- [x] Implementar `source` para scripts `.mish` con comentarios `#`.
-- [x] Hacer que jobs inexistentes produzcan un error de usuario, no un error interno.
-- [x] Crear `demo.mish`.
-
-### Fase B - Verificación y evidencias
-
-- [x] Build sin errores.
-- [x] Pruebas automatizadas.
-- [x] Smoke test no interactivo.
-- [x] Smoke test externo con pipe, redirecciones y job en segundo plano.
-- [ ] Repetir la demo en Windows Terminal con sesión interactiva.
-- [ ] Guardar capturas y resultados finales.
-- [ ] Confirmar con el docente la interpretación C# versus código C literal.
-
-### Fase C - Documento técnico impreso
-
-El documento se elaborará únicamente después de cerrar Fase B y debe seguir este orden:
-
-1. Portada.
-2. Introducción y planteamiento del problema.
-3. Objetivo general y objetivos específicos medibles.
-4. Justificación.
-5. Marco teórico: shell, SO, procesos, llamadas al sistema, `fork`, `exec`, `wait`, pipes, redirección y variables.
-6. Requisitos funcionales y no funcionales.
-7. Diseño y arquitectura de MiShell.
-8. Descripción de comandos internos y externos.
-9. Equivalencias de llamadas POSIX con APIs de Windows/.NET.
-10. Diagrama de funcionamiento.
-11. Casos de prueba, evidencias y análisis.
-12. Conclusiones.
-13. Recomendaciones y limitaciones.
-14. Bibliografía.
-
-## 6. Criterio de “listo para documentar”
-
-El proyecto estará listo para el documento cuando build/tests estén verdes, la demo se pueda repetir desde cero en Windows Terminal, cada fila de la matriz tenga evidencia y la decisión C#/.NET esté aceptada o explícitamente justificada frente a la ambigüedad de la propuesta.
+No se modifica la elección histórica de C# ni se añade un backend C sin resolver primero el criterio académico.

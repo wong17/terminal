@@ -1,0 +1,59 @@
+# Validación de la versión de octubre
+
+Ejecutada el **8 de octubre de 2026 (America/Guatemala)**. Windows 10, versión 10.0.19045; .NET SDK 10.0.401; runtime 10.0.12.
+
+## Resultado
+
+| Comprobación | Resultado |
+|---|---|
+| Build inicial Debug | 0 errores, 0 advertencias |
+| Suite inicial | 14 aprobadas, 0 fallidas |
+| Build completo final Release | 0 errores, 0 advertencias |
+| Suite final Release | **61 aprobadas, 0 fallidas, 0 omitidas** |
+| Demo aislada con `-IncludeSystemInfo` | **11/11 comprobaciones aprobadas**, salida de error vacía |
+| Edición en pseudoterminal | Tab completó `pwd`; flecha arriba recuperó una orden; escritura/Enter conservaron el prompt |
+| Ctrl+C en pseudoterminal | Canceló `Start-Sleep -Seconds 30`, mostró código 130 y permitió ejecutar otra orden |
+| Diff | `git diff --check` sin problemas |
+
+La pseudoterminal comprueba comportamiento de entrada/salida. No es una captura visual de Windows Terminal y no confirma contraste con todas las paletas, fuentes ni geometrías.
+
+## Qué cubren las pruebas
+
+- Parser: comillas, argumentos vacíos, concatenación de fragmentos, variables, operadores, cadenas, redirecciones y rechazo de sintaxis incompleta.
+- Historial: persistencia y errores/corrupción.
+- Jobs: búsqueda inexistente, espera real de una tubería, código de salida y terminación por `%id`.
+- Ejecución: contenido real de archivos de salida, anexado, stdin, tablas, tres etapas, consumidor que cierra antes, comando posterior inexistente y cancelación con comprobación de finalización del PID.
+- Sesiones de aplicación: EOF sin `exit`, código de salida, errores recuperables, ayuda legible, scripts con ubicación y conservación del fallo, ciclos de scripts.
+- Listados y procesos: tamaño y fecha, filtro sin resultados y rechazo de opciones inválidas.
+
+Se desactiva la ejecución paralela de este proyecto de pruebas porque algunos casos utilizan `Console.In` y el contexto de consola del mismo proceso.
+
+## Qué comprueba la demo
+
+1. Código final 0.
+2. stderr vacío.
+3. Salida sin ANSI.
+4. Proceso externo y pipe con texto esperado.
+5. Expansión de variable.
+6. Contenido tras redirección de entrada/salida.
+7. Dos líneas después de anexar.
+8. Archivo completo de la tubería background al finalizar `fg`.
+9. Directorio final esperado.
+10. Ayuda específica de `ps`.
+11. Columnas del listado detallado.
+
+Además, la ejecución con `-IncludeSystemInfo` mostró CPU, RAM y disco sin errores de contadores/WMI. Los recursos dependen de la instalación y permisos del equipo; una consulta fallida comunica el error.
+
+## Repetir
+
+```powershell
+pwsh -File .\scripts\verify.ps1 -IncludeSystemInfo
+```
+
+El script compila Release, ejecuta la suite y usa un perfil y un directorio temporal independientes. Guarda `build.log`, `tests.log`, `tests.trx`, `demo.stdout.txt`, `demo.stderr.txt` y `summary.json` en `artifacts/validation/`. Ese directorio no se publica: puede contener rutas y datos del equipo.
+
+Para repetir solo la demo tras compilar: `pwsh -File .\scripts\verify.ps1 -SkipBuild`.
+
+## Límites de la evidencia
+
+Quedan revisión visual presencial, autocompletado avanzado, ACL/permisos exhaustivos, todos los casos de procesos descendientes, aceptación del lenguaje por el docente, documento impreso y participación de los integrantes. No se ejecutaron pruebas Linux/POSIX ni se afirma que la API de Windows invoque literalmente `fork`/`exec`/`wait`.
