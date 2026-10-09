@@ -1,0 +1,21 @@
+# Compilación y herramientas locales
+**/bin/
+**/obj/
+.vs/
+.idea/
+*.user
+*.suo
+TestResults/
+coverage/
+__pycache__/
+
+# Ejecuciones y documentos personales generados
+tmp/
+artifacts/
+evidence/
+.mish-demo/
+docs/academic/
+settings.json
+history.json
+.env
+.env.*

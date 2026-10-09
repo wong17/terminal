@@ -1,0 +1,28 @@
+# Demostración reproducible de MiShell en Windows.
+# Ejecutar desde la raíz con: source demo.mish
+
+pwd
+ls
+mkdir .mish-demo
+cd .mish-demo
+pwd
+
+# Redirección de salida y anexado.
+echo Hola desde MiShell > saludo.txt
+echo Segunda línea >> saludo.txt
+type saludo.txt
+
+# Proceso externo y tubería usando herramientas disponibles en Windows.
+cmd.exe /c "echo Hola desde un proceso externo" | findstr.exe Hola
+findstr.exe Hola < saludo.txt
+
+# Variable de entorno expandida por el parser.
+set DEMO=Windows
+echo Plataforma: $DEMO
+
+# Proceso en segundo plano y espera explícita.
+cmd.exe /c "ping 127.0.0.1 -n 2" &
+jobs
+fg 1
+
+cd ..

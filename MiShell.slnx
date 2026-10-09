@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="MiShell.App/MiShell.App.csproj" />
+  <Project Path="MiShell.Commands/MiShell.Commands.csproj" />
+  <Project Path="MiShell.Configuration/MiShell.Configuration.csproj" />
+  <Project Path="MiShell.Core.Tests/MiShell.Core.Tests.csproj" />
+  <Project Path="MiShell.Core/MiShell.Core.csproj" />
+  <Project Path="MiShell.UI/MiShell.UI.csproj" />
+</Solution>
