@@ -56,16 +56,4 @@ Para repetir solo la demo tras compilar: `pwsh -File .\scripts\verify.ps1 -SkipB
 
 ## Límites de la evidencia
 
-El docente aceptó C# según la confirmación del equipo. La verificación se limita a Windows en este equipo; no acredita todas las ACL, procesos descendientes o paletas posibles. La exposición, asistencia, impresión física y evaluación corresponden al curso.
-
-## Cierre del plan
-
-- E/S: rechaza entrada/salida iguales y destinos duplicados sin pérdida de datos; archivo bloqueado y ACL de escritura denegada comprobados sobre temporales propios.
-- Background: un escritor simulado falla mientras un proceso real sigue activo; el proceso termina, la causa se conserva y fg libera el job.
-- Tab: rutas con espacios/comillas y PATH actualizado comprobados en pruebas; ruta real completada en pseudoterminal.
-- sysinfo: cancelación durante muestreo, recursos indisponibles y consulta real satisfactoria.
-- Informe oficial actualizado, índice recalculado con Word y páginas renderizadas revisadas.
-
-Las figuras representan transcripciones de sesiones reales aisladas, separando stdout y stderr; no son capturas de Windows Terminal. El renderizador no encontró LibreOffice: Word actualizó campos y exportó la QA, y pypdfium2 generó las páginas revisadas. La portada y convenciones institucionales se preservaron.
-
-Se corrigió la referencia de stderr a [StreamReader.ReadLineAsync](https://learn.microsoft.com/en-us/dotnet/api/system.io.streamreader.readlineasync?view=net-10.0), empleado por el código actual.
+La verificación se limita a Windows en el equipo de desarrollo; no acredita todas las ACL, procesos descendientes o paletas posibles. Las capturas del informe se generaron con un pseudoterminal, no con Windows Terminal.

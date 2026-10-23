@@ -146,11 +146,9 @@ docs/                    Cumplimiento, explicación técnica y defensa
 
 Core no referencia Spectre.Console. Commands sí referencia UI y Configuration: la solución separa responsabilidades por proyectos, sin imponer una arquitectura nueva.
 
-## Proyecto de clase
+## Proyecto académico
 
-El docente autorizó C#, según la confirmación del equipo del 8 de octubre de 2026. MiShell demuestra procesos mediante Windows/.NET; POSIX se explica como correspondencia conceptual en [ADR-001](docs/decisions/ADR-001-csharp-windows.md).
+MiShell es un proyecto de carácter académico para la asignatura Arquitectura de Sistemas Operativos. Muestra cómo una shell analiza una línea, crea y espera procesos y conecta sus flujos de entrada y salida.
 
-- [Matriz completa de cumplimiento](PLAN_DE_CUMPLIMIENTO.md)
 - [Explicación técnica del funcionamiento](docs/technical-guide.md)
-- [Demostración y revisión del informe impreso](docs/defense.md)
-- [Estado de cierre del plan](PLAN.md)
+- [Evidencia de validación](docs/validation.md)
