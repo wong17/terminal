@@ -45,7 +45,7 @@ Se revisó el informe oficial `Informe_MiShell_APA7_final.docx` indicado por el 
 | Recomendaciones | Ayuda, temas, protección de datos y demo reproducible |
 | Bibliografía | Lectura actual de stderr y letras de citas reconciliadas |
 
-Campos e índice actualizados con Word, páginas renderizadas revisadas y código del informe con contraste corregido. El original tiene respaldo externo; el DOCX y la QA quedan fuera de Git.
+Campos e índice actualizados con Word, páginas renderizadas revisadas y código del informe con contraste corregido. El DOCX y la QA quedan fuera de Git.
 
 ## Rúbricas y defensa (pp. 4–5)
 

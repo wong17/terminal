@@ -1,4 +1,17 @@
-# MiShell
+<h1 align="center">MiShell</h1>
+
+<p align="center"><strong>Una shell para Windows hecha en C# y .NET 10</strong><br>
+Ejecuta comandos internos y programas externos, conecta sus flujos con tuberías y redirecciones y administra trabajos en segundo plano.</p>
+
+<p align="center"><img src="docs/portada/portada_frente.png" alt="MiShell mostrando el banner y el comando sysinfo con barras de CPU, RAM y disco" width="640"></p>
+
+## Características
+
+- **Ciclo interactivo completo:** prompt de tres líneas con hora, ruta y código de salida, historial, autocompletado con Tab y resaltado del comando mientras se escribe.
+- **Procesos reales:** crea, conecta y espera procesos de Windows; `trace on` muestra cada paso (crear, esperar, código de salida).
+- **Sintaxis de shell:** tuberías `|`, redirecciones `>`, `>>`, `<`, operadores `&&` y `||`, segundo plano con `&`, variables y scripts con `source`.
+- **Comandos internos detallados:** `ls`, `ps`, `top`, `sysinfo`, `which`, `cat` y otros entregan al menos la información de sus equivalentes de Windows, con barras y colores por tema.
+- **Código modular:** seis proyectos, un archivo por comando y 110 pruebas automatizadas.
 
 Shell educativo de Windows escrito en C#/.NET 10. Ejecuta comandos internos y programas externos, conecta sus flujos de entrada/salida y administra trabajos básicos.
 
@@ -141,4 +154,3 @@ El docente autorizó C#, según la confirmación del equipo del 8 de octubre de 
 - [Explicación técnica del funcionamiento](docs/technical-guide.md)
 - [Demostración y revisión del informe impreso](docs/defense.md)
 - [Estado de cierre del plan](PLAN.md)
-- [Limpieza y conservación de archivos históricos](docs/cleanup.md)
