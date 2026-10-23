@@ -7,7 +7,7 @@ Archivo final: `Presentacion_MiShell.pptx` (y su PDF) en la carpeta de clases. S
 | Bloque | Diapositivas |
 |---|---|
 | Inicio | 1 portada con captura de MiShell (`echo Hola mundo`), 2 índice |
-| A · Qué buscamos | 3 objetivos y problema, 4 contexto usuario → kernel → recursos |
+| A · Qué buscamos | 3 objetivos y problema, 4 contexto de usuario a kernel y recursos |
 | B · Cómo está hecho | 5 organización, 6 ciclo REPL con código, 7 parser y AST |
 | C · Cómo ejecuta | 8 interno o externo, 9 crear/ejecutar/esperar, 10 tuberías, 11 `&&` y `||`, 12 segundo plano |
 | D · Estado y robustez | 13 estado y scripts, 14 errores |

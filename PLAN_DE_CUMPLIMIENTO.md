@@ -8,7 +8,7 @@ El docente autorizó C#, según la confirmación directa del equipo. La implemen
 
 | Criterio y página | Implementación y evidencia |
 |---|---|
-| Interacción usuario/SO (pp. 1, 6) | REPL → parser/AST → ejecución → resultado; guía técnica y diagrama |
+| Interacción usuario/SO (pp. 1, 6) | REPL, parser/AST, ejecución y resultado; guía técnica y diagrama |
 | Prompt y lectura (p. 2) | contrast/paper/plain, edición, historial y Tab; EOF, Ctrl+C y Ctrl+Z comprobados |
 | Externos (p. 2) | PATH/rutas, ArgumentList y procesos reales en pruebas y demo |
 | cd, pwd, clear y exit (pp. 2–3) | Directorio compartido, salida a archivo, limpieza interactiva y cierre con código |
@@ -61,5 +61,5 @@ La revisión interactiva se realizó en pseudoterminal; las figuras son transcri
 
 - `ls | findstr.exe txt`: un comando interno puede ser la primera etapa de una tubería (ejemplo `ls | grep txt` de la demostración obligatoria).
 - `trace on|off`: muestra la creación, el PID, la espera y el código de cada proceso, para evidenciar crear, ejecutar y esperar durante la defensa.
-- Editor: comando coloreado según exista, sugerencia gris del historial (→ o Fin la acepta), `help` agrupado y tablas con título propio.
-- Informe reescrito: planteamiento del problema, marco teórico ampliado, diagrama usuario→kernel→recursos, análisis de resultados, conclusiones y recomendaciones.
+- Editor: comando coloreado según exista, sugerencia gris del historial (la flecha derecha o Fin la acepta), `help` agrupado y tablas con título propio.
+- Informe reescrito: planteamiento del problema, marco teórico ampliado, diagrama usuario, kernel y recursos, análisis de resultados, conclusiones y recomendaciones.

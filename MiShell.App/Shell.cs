@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace MiShell.App;
 
-/// <summary>Bucle principal del shell: leer → parsear → ejecutar → repetir.</summary>
+/// <summary>Bucle principal del shell: leer, parsear, ejecutar y repetir.</summary>
 public sealed class Shell(
     Parser parser,
     IShellExecutor executor,

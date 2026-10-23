@@ -11,7 +11,7 @@ namespace MiShell.Core.Execution;
 /// de iniciarlo, esperarlo y liberarlo sin dejar procesos ni archivos abiertos.
 /// </summary>
 /// <remarks>
-/// Ciclo de vida: <c>SetInput/SetOutput</c> → <see cref="Start"/> → <see cref="RunAsync"/>.
+/// Ciclo de vida: <c>SetInput/SetOutput</c>, después <see cref="Start"/> y por último <see cref="RunAsync"/>.
 /// En primer plano se libera con <see cref="DisposeAsync"/>; en segundo plano los procesos pasan a la
 /// tabla de trabajos y <see cref="RunAsync"/> limpia todo lo demás al terminar.
 /// </remarks>

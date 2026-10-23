@@ -6,7 +6,7 @@ using System.Text;
 namespace MiShell.UI.Input;
 
 /// <summary>
-/// Editor de línea de consola con historial (↑/↓), edición (←/→, Inicio, Fin,
+/// Editor de línea de consola con historial (flechas arriba y abajo), edición (flechas izquierda y derecha, Inicio, Fin,
 /// Supr, Retroceso) y autocompletado con Tab.
 /// <para>
 /// El prompt puede ser multilínea: la información vive en las líneas superiores y
