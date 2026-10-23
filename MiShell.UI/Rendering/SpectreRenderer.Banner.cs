@@ -40,13 +40,13 @@ public sealed partial class SpectreRenderer
             _console.WriteLine();
         }
 
-        // Una sola línea: ayuda, versión y runtime (lo que el prompt no dice), hora y tema. Usuario, equipo y ruta ya están en el prompt.
+        // Una sola línea: ayuda, versión del runtime (en verde cálido), hora y tema. Usuario, equipo y ruta ya están en el prompt.
         var sep = Format(" · ", theme.Muted);
-        var version = typeof(SpectreRenderer).Assembly.GetName().Version;
+        var runtime = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+        var warmGreen = AnsiColors.Enabled && theme.Name != "plain" ? "\e[38;2;163;190;140m" + runtime + "\e[0m" : runtime;
         _writer.WriteLine(
             "Escribe " + Format("help", theme.Command) + " para ver todos los comandos" + sep +
-            Format($"MiShell {version?.Major}.{version?.Minor}", theme.Muted) + sep +
-            Format(System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription, theme.Muted) + sep +
+            warmGreen + sep +
             Format(ClockFormat.Hour(DateTime.Now), theme.Time) + sep +
             Format($"tema {theme.Name}", theme.Tag));
         _console.WriteLine();
