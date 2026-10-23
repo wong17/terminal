@@ -3,6 +3,7 @@ using System.Diagnostics;
 
 namespace MiShell.Core.Jobs;
 
+/// <summary>Tabla de trabajos en segundo plano: asigna identificadores crecientes, conserva los procesos de cada tubería y protege su lista con un candado porque la consultan el ciclo principal y los comandos jobs, fg y kill.</summary>
 public sealed class JobTable : IJobTable, IAsyncDisposable
 {
     private readonly Lock _gate = new();
@@ -14,9 +15,11 @@ public sealed class JobTable : IJobTable, IAsyncDisposable
         get { lock (_gate) return _jobs.ToArray(); }
     }
 
+    /// <summary>Registra un trabajo de un solo proceso.</summary>
     public BackgroundJob Add(Process process, string commandLine) =>
         Add([process], commandLine, WaitAsync(process));
 
+    /// <summary>Registra una tubería completa con la tarea que espera sus procesos y copias de flujos.</summary>
     public BackgroundJob Add(IReadOnlyList<Process> processes, string commandLine, Task<int> completion)
     {
         lock (_gate)
@@ -33,6 +36,7 @@ public sealed class JobTable : IJobTable, IAsyncDisposable
         return process.ExitCode;
     }
 
+    /// <summary>Quita y devuelve el primer trabajo terminado, para avisar al usuario antes del siguiente prompt.</summary>
     public BackgroundJob? RemoveFirstCompleted()
     {
         lock (_gate)
@@ -43,6 +47,7 @@ public sealed class JobTable : IJobTable, IAsyncDisposable
         }
     }
 
+    /// <summary>Busca un trabajo por su número (%1) o por el inicio de su comando.</summary>
     public bool TryGetByPrefix(string input, out BackgroundJob? job)
     {
         lock (_gate)
@@ -56,14 +61,17 @@ public sealed class JobTable : IJobTable, IAsyncDisposable
         }
     }
 
+    /// <summary>Quita un trabajo de la tabla y libera sus procesos.</summary>
     public void Remove(BackgroundJob job)
     {
         lock (_gate) _jobs.Remove(job);
         job.Dispose();
     }
 
+    /// <summary>Termina todos los procesos del trabajo y sus árboles.</summary>
     public void Kill(BackgroundJob job)
     {
+        job.Killed = true;
         foreach (var process in job.Processes)
         {
             try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
@@ -71,6 +79,7 @@ public sealed class JobTable : IJobTable, IAsyncDisposable
         }
     }
 
+    /// <summary>Al cerrar la shell termina los trabajos que sigan activos.</summary>
     public async ValueTask DisposeAsync()
     {
         foreach (var job in Jobs)

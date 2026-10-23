@@ -4,6 +4,7 @@ using MiShell.UI.Themes;
 
 namespace MiShell.Commands.BuiltinCommands;
 
+/// <summary><c>theme</c>: cambia (y guarda) el tema de colores, o lista los temas disponibles.</summary>
 public sealed class ThemeCommand(IOutputRenderer renderer, ThemeManager themeManager, ShellSettings settings) : IBuiltinCommand
 {
     public string Name => "theme";
@@ -12,6 +13,7 @@ public sealed class ThemeCommand(IOutputRenderer renderer, ThemeManager themeMan
 
     public string Usage => "theme [nombre]  ·  theme list";
 
+    /// <inheritdoc />
     public Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
     {
         if (arguments.Length > 1)
@@ -40,38 +42,6 @@ public sealed class ThemeCommand(IOutputRenderer renderer, ThemeManager themeMan
         settings.SetTheme(arguments[0]);
         settings.Save(settings.SettingsFilePath);
         renderer.WriteSuccess($"Tema cambiado a '{arguments[0]}'.");
-        return Task.FromResult(CommandResult.Ok);
-    }
-}
-
-public sealed class SetCommand(IOutputRenderer renderer, IShellEnvironment environment) : IBuiltinCommand
-{
-    public string Name => "set";
-
-    public string Description => "Define una variable de entorno: set NOMBRE=valor.";
-
-    public string Usage => "set NOMBRE=valor  ·  set (lista todo)";
-
-    public Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
-    {
-        if (arguments.Length == 0)
-        {
-            renderer.RenderTable(
-                "Variables de entorno",
-                ["Nombre", "Valor"],
-                environment.EnumerateVariables().Select(v => (string[])[v.Name, v.Value]));
-            return Task.FromResult(CommandResult.Ok);
-        }
-
-        var parts = arguments[0].Split('=', 2);
-        if (arguments.Length != 1 || parts.Length != 2 || string.IsNullOrWhiteSpace(parts[0]))
-        {
-            renderer.WriteError("Formato esperado: set NOMBRE=valor");
-            return Task.FromResult(CommandResult.Failure);
-        }
-
-        environment.SetVariable(parts[0], parts[1]);
-        renderer.WriteSuccess($"{parts[0]} = {parts[1]}");
         return Task.FromResult(CommandResult.Ok);
     }
 }

@@ -3,6 +3,7 @@ using System.Text;
 
 namespace MiShell.Core.Parsing;
 
+/// <summary>Error de sintaxis de la línea (comillas sin cerrar, operador incompleto, redirecciones duplicadas...).</summary>
 public sealed class SyntaxException(string message) : Exception(message);
 
 /// <summary>Analiza el subconjunto de sintaxis de MiShell, conservando los operadores entre comillas.</summary>
@@ -10,6 +11,7 @@ public sealed class Parser(IShellEnvironment environment)
 {
     private sealed record Token(string Text, bool IsOperator = false);
 
+    /// <summary>Convierte una línea de texto en un <see cref="CommandLine"/>: separa tokens respetando comillas, expande $VAR fuera de comillas simples y arma tuberías, redirecciones, && y ||.</summary>
     public CommandLine Parse(string input)
     {
         var tokens = Tokenize(input);

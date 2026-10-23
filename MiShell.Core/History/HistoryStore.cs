@@ -35,8 +35,10 @@ public sealed class HistoryStore : IDisposable
         }
     }
 
+    /// <summary>Entradas del historial, de la más antigua a la más reciente.</summary>
     public IReadOnlyList<string> Entries => _entries;
 
+    /// <summary>Agrega una línea (sin duplicar la anterior), recorta a 500 entradas y guarda en JSON.</summary>
     public void Add(string commandLine)
     {
         if (string.IsNullOrWhiteSpace(commandLine) || _entries.Count > 0 && _entries[^1] == commandLine)
@@ -78,5 +80,6 @@ public sealed class HistoryStore : IDisposable
         }
     }
 
+    /// <summary>Guarda el historial al cerrar.</summary>
     public void Dispose() => Persist();
 }

@@ -1,4 +1,6 @@
 using MiShell.UI.Prompt;
+using MiShell.UI.Rendering;
+using MiShell.UI.Themes;
 using System.Text;
 
 namespace MiShell.UI.Input;
@@ -12,11 +14,17 @@ namespace MiShell.UI.Input;
 /// desaparecen mientras el usuario escribe.
 /// </para>
 /// </summary>
-public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func<string, string[]> completionProvider)
+public sealed class LineEditor(
+    Func<IReadOnlyList<string>> historyProvider,
+    Func<string, string[]> completionProvider,
+    Func<string, bool>? isKnownCommand = null,
+    Func<bool>? colorEnabled = null,
+    Func<ShellTheme>? currentTheme = null)
 {
     /// <summary>Mínimo de columnas para aplicar geometría; debajo se degrada a modo simple.</summary>
     private const int MinUsableWidth = 10;
 
+    /// <summary>Muestra el prompt y edita una línea tecla por tecla (flechas, historial, Tab, sugerencia gris). Devuelve null con Ctrl+Z y cadena vacía con Ctrl+C.</summary>
     public string? ReadLine(string prompt)
     {
         // Con stdin redirigido (pipe/script) no hay teclado: se lee línea a línea.
@@ -32,6 +40,7 @@ public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func
         var historyIndex = history.Count;
         var cursor = 0;
 
+        var knownCache = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         var inputPrefix = prompt.Split('\n')[^1];
         var prefixWidth = PromptRenderer.VisibleWidth(inputPrefix);
 
@@ -91,6 +100,12 @@ public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func
                         cursor++;
                         Refresh();
                     }
+                    else if (SuggestionFor(buffer.ToString()) is { Length: > 0 } accepted)
+                    {
+                        _ = buffer.Append(accepted);
+                        cursor = buffer.Length;
+                        Refresh();
+                    }
 
                     break;
                 case ConsoleKey.Home:
@@ -104,6 +119,12 @@ public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func
                 case ConsoleKey.End:
                     if (cursor != buffer.Length)
                     {
+                        cursor = buffer.Length;
+                        Refresh();
+                    }
+                    else if (SuggestionFor(buffer.ToString()) is { Length: > 0 } accepted)
+                    {
+                        _ = buffer.Append(accepted);
                         cursor = buffer.Length;
                         Refresh();
                     }
@@ -180,10 +201,35 @@ public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func
             Console.Write("\r\x1b[J");
         }
 
+        string SuggestionFor(string text)
+        {
+            if (colorEnabled?.Invoke() != true || text.Length == 0 || cursor != buffer.Length) return string.Empty;
+            for (var i = history.Count - 1; i >= 0; i--)
+            {
+                var entry = history[i];
+                if (entry.Length > text.Length && entry.StartsWith(text, StringComparison.Ordinal))
+                    return entry[text.Length..];
+            }
+
+            return string.Empty;
+        }
+
+        bool Known(string word)
+        {
+            if (!knownCache.TryGetValue(word, out var known))
+                knownCache[word] = known = isKnownCommand!(word);
+            return known;
+        }
+
         void RewriteBuffer()
         {
-            Console.Write(buffer);
-            var end = prefixWidth + PromptRenderer.VisibleWidth(buffer.ToString());
+            var text = buffer.ToString();
+            var highlight = isKnownCommand is not null && colorEnabled?.Invoke() == true;
+            var palette = currentTheme?.Invoke();
+            Console.Write(highlight
+                ? Colorize(text, Known, palette?.Command ?? ConsoleColor.Green, palette?.Time ?? ConsoleColor.DarkCyan)
+                : text);
+            var end = prefixWidth + PromptRenderer.VisibleWidth(text);
             cursorRow = RowOf(end, width);
             cursorCol = ColOf(end, width);
             if (end > 0 && end % width == 0)
@@ -191,6 +237,11 @@ public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func
                 // El texto llenó la fila exacta: se fuerza el ajuste de línea pendiente
                 // para que el cursor físico coincida con la geometría calculada.
                 Console.Write("\x1b[1B");
+            }
+            else if (SuggestionFor(text) is { Length: > 0 } ghost && end + ghost.Length < width)
+            {
+                // Sugerencia del historial en gris; solo si cabe en la fila actual.
+                Console.Write($"\x1b[90m{ghost}\x1b[0m\x1b[{ghost.Length}D");
             }
 
             MoveCursorTo(prefixWidth + PromptRenderer.VisibleWidth(buffer.ToString()[..cursor]), width);
@@ -239,6 +290,61 @@ public sealed class LineEditor(Func<IReadOnlyList<string>> historyProvider, Func
             cursorRow = targetRow;
             cursorCol = targetCol;
         }
+    }
+
+    /// <summary>
+    /// Colorea la línea sin cambiar su ancho visible: comando válido en verde, desconocido en rojo,
+    /// operadores en cian, comillas en amarillo, variables en magenta y opciones (<c>-x</c>) en el color de opción.
+    /// </summary>
+    /// <param name="text">Línea a colorear.</param>
+    /// <param name="isKnown">Indica si una palabra en posición de comando existe.</param>
+    /// <param name="commandColor">Color de un comando válido (el rol Command del tema).</param>
+    /// <param name="optionColor">Color de las opciones que empiezan con guion.</param>
+    public static string Colorize(string text, Func<string, bool> isKnown,
+        ConsoleColor commandColor = ConsoleColor.Green, ConsoleColor optionColor = ConsoleColor.DarkCyan)
+    {
+        const string Reset = "\x1b[0m";
+        var result = new StringBuilder();
+        var atCommand = true;
+        var i = 0;
+        while (i < text.Length)
+        {
+            var c = text[i];
+            if (char.IsWhiteSpace(c))
+            {
+                result.Append(c);
+                i++;
+            }
+            else if (c is '|' or '&' or '<' or '>')
+            {
+                var start = i;
+                while (i < text.Length && text[i] is '|' or '&' or '<' or '>') i++;
+                var op = text[start..i];
+                result.Append("\x1b[96m").Append(op).Append(Reset);
+                if (op is "|" or "&&" or "||" or "&") atCommand = true;
+            }
+            else if (c is '"' or '\'')
+            {
+                var start = i++;
+                while (i < text.Length && text[i] != c) i++;
+                if (i < text.Length) i++;
+                result.Append("\x1b[93m").Append(text, start, i - start).Append(Reset);
+                atCommand = false;
+            }
+            else
+            {
+                var start = i;
+                while (i < text.Length && !char.IsWhiteSpace(text[i]) && text[i] is not ('|' or '&' or '<' or '>' or '"' or '\'')) i++;
+                var word = text[start..i];
+                var color = atCommand ? (isKnown(word) ? AnsiColors.Sequence(commandColor) : "\x1b[91m")
+                    : word.StartsWith('$') ? "\x1b[95m"
+                    : word.Length > 1 && word[0] == '-' ? AnsiColors.Sequence(optionColor) : string.Empty;
+                result.Append(color).Append(word).Append(color.Length > 0 ? Reset : string.Empty);
+                atCommand = false;
+            }
+        }
+
+        return result.ToString();
     }
 
     /// <summary>

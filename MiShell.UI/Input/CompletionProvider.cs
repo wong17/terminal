@@ -11,6 +11,7 @@ public sealed class CompletionProvider(
     private static readonly HashSet<string> ExecutableExtensions = new(StringComparer.OrdinalIgnoreCase)
         { ".exe", ".com", ".cmd", ".bat", ".ps1" };
 
+    /// <summary>Candidatos para Tab: comandos internos, programas del PATH vigente y rutas (con sus comillas y prefijos).</summary>
     public string[] Complete(string line)
     {
         var (start, command) = ActiveWord(line);

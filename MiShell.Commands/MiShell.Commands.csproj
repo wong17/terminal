@@ -11,6 +11,10 @@
     <PackageReference Include="System.Management" Version="10.0.11" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Help\help.json" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

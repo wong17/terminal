@@ -127,6 +127,8 @@ public sealed class ExecutionTests
         Assert.Equal(0, result.ExitCode);
         await job.Completion.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.All(job.Processes, p => Assert.True(p.HasExited));
+        Assert.True(job.Killed);
+        Assert.Equal("terminado", job.Status);
     }
 
     [Fact]
@@ -183,10 +185,52 @@ public sealed class ExecutionTests
     }
 
     [Fact]
-    public async Task UnsupportedBuiltinPipelineReportsAnError()
+    public async Task BuiltinInLaterPipelineStageReportsAnError()
     {
         await using var f = new ExecutionFixture();
-        Assert.Equal(1, await f.Run("echo hello | findstr.exe hello"));
+        Assert.Equal(1, await f.Run("cmd.exe /c echo hello | echo hello"));
+    }
+
+    [Fact]
+    public async Task BuiltinCanFeedAnExternalProgramThroughAPipe()
+    {
+        await using var f = new ExecutionFixture();
+        await File.WriteAllTextAsync(f.FilePath("nota.txt"), "x");
+        await File.WriteAllTextAsync(f.FilePath("foto.png"), "x");
+        Assert.Equal(0, await f.Run("ls | findstr.exe txt > filtrado.txt"));
+        var output = await File.ReadAllTextAsync(f.FilePath("filtrado.txt"));
+        Assert.Contains("nota.txt", output);
+        Assert.DoesNotContain("foto.png", output);
+    }
+
+    [Fact]
+    public async Task EchoFeedsFindstrAndFilterFailureReturnsItsCode()
+    {
+        await using var f = new ExecutionFixture();
+        Assert.Equal(0, await f.Run("echo hello | findstr.exe hello"));
+        Assert.Equal(1, await f.Run("echo hello | findstr.exe adios"));
+    }
+
+    [Fact]
+    public async Task BuiltinInPipelineRejectsBackgroundAndOutputRedirection()
+    {
+        await using var f = new ExecutionFixture();
+        Assert.Equal(1, await f.Run("echo hello | findstr.exe hello &"));
+        Assert.Equal(1, await f.Run("echo hello > a.txt | findstr.exe hello"));
+    }
+
+    [Fact]
+    public async Task TraceReportsProcessCreationAndExit()
+    {
+        await using var f = new ExecutionFixture();
+        f.State.TraceProcesses = true;
+        var error = new StringWriter();
+        var original = Console.Error;
+        Console.SetError(error);
+        try { Assert.Equal(0, await f.Run("cmd.exe /c exit 0")); }
+        finally { Console.SetError(original); }
+        Assert.Contains("[trace] proceso iniciado: PID", error.ToString());
+        Assert.Contains("terminó con código 0", error.ToString());
     }
 
     [Fact]
@@ -196,8 +240,8 @@ public sealed class ExecutionTests
         await File.WriteAllTextAsync(f.FilePath("sample.txt"), "abc");
         Assert.Equal(0, await f.Run("ls -l > listing.txt"));
         var output = await File.ReadAllTextAsync(f.FilePath("listing.txt"));
-        Assert.Contains("Tamaño (bytes)", output);
-        Assert.Contains("FILE\tsample.txt\t3\t", output);
+        Assert.Contains("Tamaño", output);
+        Assert.Matches(@"-a----\t\d{4}-\d\d-\d\d \d\d:\d\d\t\d{4}-\d\d-\d\d \d\d:\d\d\t\d{4}-\d\d-\d\d \d\d:\d\d\t3\tsample\.txt", output);
         Assert.Contains("Modificado", output);
     }
 

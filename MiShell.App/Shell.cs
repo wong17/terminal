@@ -21,12 +21,14 @@ public sealed class Shell(
 {
     private CancellationTokenSource? _currentCommand;
 
+    /// <summary>Cancela el comando en ejecución (Ctrl+C) sin cerrar la sesión.</summary>
     public void CancelCurrentCommand()
     {
         try { _currentCommand?.Cancel(); }
         catch (ObjectDisposedException) { /* Terminó mientras llegaba Ctrl+C. */ }
     }
 
+    /// <summary>Ciclo principal (REPL): muestra el prompt, lee una línea, la guarda en el historial, la analiza con el parser, la ejecuta y repite hasta exit, Ctrl+Z o fin de la entrada. Cada tipo de error se convierte en un mensaje y un código de salida sin cerrar la sesión.</summary>
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         renderer.RenderBanner();
@@ -62,6 +64,10 @@ public sealed class Shell(
             }
 
             history.Add(input.Trim());
+
+            // En una terminal interactiva la salida se separa con una línea en blanco de la orden y del siguiente prompt.
+            var spaced = !Console.IsInputRedirected;
+            if (spaced) renderer.WriteLine();
 
             using var commandCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _currentCommand = commandCancellation;
@@ -119,7 +125,11 @@ public sealed class Shell(
                 lastExitCode = 1;
                 lastDuration = null;
             }
-            finally { _currentCommand = null; }
+            finally
+            {
+                _currentCommand = null;
+                if (spaced && !state.ExitRequested) renderer.WriteLine();
+            }
         }
 
         renderer.WriteSuccess("Hasta pronto.");
@@ -133,6 +143,7 @@ public sealed class Shell(
             try
             {
                 var code = job.Completion.GetAwaiter().GetResult();
+                if (job.Killed) continue; // kill ya informó del resultado; el código de salida de un proceso terminado a la fuerza no es un fallo.
                 if (code == 0) renderer.WriteInfo($"[{job.JobId}] terminado con código {code}: {job.CommandLine}");
                 else renderer.WriteError($"[{job.JobId}] falló con código {code}: {job.CommandLine}");
             }

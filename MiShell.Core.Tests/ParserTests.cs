@@ -139,3 +139,16 @@ public sealed class ParserTests
         Assert.Equal(["$HOME", @"C:\Users\test"], command.Arguments);
     }
 }
+
+public sealed class LineEditorColorizeTests
+{
+    [Fact]
+    public void ColorizeKeepsVisibleTextAndMarksCommands()
+    {
+        var colored = MiShell.UI.Input.LineEditor.Colorize("ls | foo \"a b\" $X", w => w == "ls");
+        var plain = System.Text.RegularExpressions.Regex.Replace(colored, "\u001b\\[[0-9;]*m", "");
+        Assert.Equal("ls | foo \"a b\" $X", plain);
+        Assert.Contains("\u001b[92mls", colored);
+        Assert.Contains("\u001b[91mfoo", colored);
+    }
+}

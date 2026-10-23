@@ -1,3 +1,4 @@
+using MiShell.Core;
 using MiShell.UI.Rendering;
 using MiShell.UI.Themes;
 using System.Globalization;
@@ -44,13 +45,13 @@ public sealed partial class PromptRenderer(ThemeManager themeManager, IconProvid
         var left = new StringBuilder();
         if (showTime)
         {
-            left.Append(AnsiColors.For(theme.Accent, theme.Name != "plain"))
-                .Append(DateTime.Now.ToString("HH:mm", CultureInfo.InvariantCulture))
+            left.Append(AnsiColors.For(theme.Time, theme.Name != "plain"))
+                .Append(ClockFormat.Hour(DateTime.Now))
                 .Append(' ')
                 .Append(Reset);
         }
 
-        left.Append(AnsiColors.For(theme.Muted, theme.Name != "plain"))
+        left.Append(AnsiColors.For(theme.Host, theme.Name != "plain"))
             .Append(Environment.UserName)
             .Append('@')
             .Append(Environment.MachineName)

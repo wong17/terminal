@@ -3,12 +3,17 @@ namespace MiShell.UI.Rendering;
 /// <summary>Preserva la diferencia entre los ocho tonos normales y los ocho brillantes.</summary>
 public static class AnsiColors
 {
+    /// <summary>True si la salida admite color (no está redirigida y NO_COLOR no está definido).</summary>
     public static bool Enabled => !Console.IsOutputRedirected &&
         string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NO_COLOR"));
 
-    public static string For(ConsoleColor color, bool enabled = true)
+    /// <summary>Secuencia ANSI del color pedido, o cadena vacía si el color está desactivado.</summary>
+    public static string For(ConsoleColor color, bool enabled = true) =>
+        !enabled || !Enabled ? string.Empty : Sequence(color);
+
+    /// <summary>Secuencia ANSI del color pedido sin consultar si la salida admite color (para texto que se colorea antes de decidir).</summary>
+    public static string Sequence(ConsoleColor color)
     {
-        if (!enabled || !Enabled) return string.Empty;
         var code = color switch
         {
             ConsoleColor.Black => 30,

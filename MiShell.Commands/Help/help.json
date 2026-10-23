@@ -1,0 +1,163 @@
+{
+  "groups": [
+    {
+      "name": "Archivos",
+      "commands": [
+        "ls",
+        "dir",
+        "cd",
+        "pwd",
+        "mkdir",
+        "cat",
+        "type",
+        "echo",
+        "clear",
+        "cls"
+      ]
+    },
+    {
+      "name": "Procesos",
+      "commands": [
+        "ps",
+        "top",
+        "jobs",
+        "fg",
+        "kill",
+        "trace",
+        "which"
+      ]
+    },
+    {
+      "name": "Sesión",
+      "commands": [
+        "set",
+        "unset",
+        "history",
+        "source",
+        "theme",
+        "format",
+        "help",
+        "exit"
+      ]
+    },
+    {
+      "name": "Sistema",
+      "commands": [
+        "sysinfo",
+        "version",
+        "time"
+      ]
+    }
+  ],
+  "syntax": [
+    "Comillas dobles expanden $VARIABLE; comillas simples conservan texto literal.",
+    "> reemplaza la salida; >> la añade; < lee la entrada. Una entrada y una salida por comando.",
+    "| conecta la salida de un comando con la entrada del siguiente; el primero puede ser interno (ls | findstr.exe txt).",
+    "& inicia una tubería externa en segundo plano.",
+    "&& ejecuta la siguiente orden si la anterior termina con 0; || si termina con error.",
+    "Los internos admiten > y >>; cat y type también <. Solo van al inicio de una tubería y no admiten &.",
+    "Ejemplo: echo Hola | findstr.exe Hola > saludo.txt"
+  ],
+  "commands": {
+    "ls": {
+      "detail": "Columnas como dir/Get-ChildItem: Modo (d directorio, a archivo, r solo lectura, h oculto, s sistema, l enlace), fecha, tamaño en bytes y nombre; al final, totales y espacio libre. -l añade creación y último acceso, -a muestra ocultos, -h tamaños legibles, -R entra en subcarpetas, -t ordena por fecha, -S por tamaño, -r invierte. Acepta varias rutas y patrones como *.txt.",
+      "example": "ls -lh *.txt"
+    },
+    "dir": {
+      "detail": "Alias de ls con las mismas opciones.",
+      "example": "dir -a"
+    },
+    "ps": {
+      "detail": "Como Get-Process: PID, hilos, handles, sesión (SI), CPU acumulada, memoria privada (PM), memoria de trabajo e inicio. Orden predeterminado: RAM descendente. --id PID muestra el detalle de un proceso (ruta, versión, prioridad, memoria pico y virtual). Se omiten procesos protegidos.",
+      "example": "ps 10 --name dotnet --sort cpu"
+    },
+    "kill": {
+      "detail": "%1 identifica un trabajo; un número sin % es un PID. Termina todo el árbol de procesos y acepta varios objetivos a la vez.",
+      "example": "kill %1 4321"
+    },
+    "fg": {
+      "detail": "Espera todos los procesos y la copia de flujos del trabajo. Devuelve el código del último proceso. Ctrl+C termina ese trabajo.",
+      "example": "fg 1"
+    },
+    "jobs": {
+      "detail": "Lista los trabajos con PID, estado, resultado, hora de inicio y duración.",
+      "example": "jobs"
+    },
+    "cat": {
+      "detail": "Lee uno o varios archivos (con encabezado por archivo) o stdin. -n numera líneas, --head N y --tail N limitan la salida.",
+      "example": "cat -n --head 5 saludo.txt"
+    },
+    "type": {
+      "detail": "Alias de cat con las mismas opciones.",
+      "example": "type saludo.txt otro.txt"
+    },
+    "mkdir": {
+      "detail": "Crea la ruta completa (como mkdir -p), muestra una tabla con lo creado e informa lo que ya existía.",
+      "example": "mkdir proyecto/src/datos"
+    },
+    "pwd": {
+      "detail": "Muestra el directorio actual. -v añade unidad, formato, espacio libre y directorio anterior.",
+      "example": "pwd -v"
+    },
+    "echo": {
+      "detail": "-n omite el salto de línea; -e interpreta las secuencias de escape con barra invertida (n, t y barra).",
+      "example": "echo -e \"a\\tb\""
+    },
+    "theme": {
+      "detail": "contrast: fondo oscuro; paper: fondo claro; plain: sin color. La elección se guarda para próximas sesiones.",
+      "example": "theme contrast"
+    },
+    "source": {
+      "detail": "Ejecuta cada línea en la sesión actual. Ignora líneas vacías y comentarios #. Continúa tras errores, informa archivo/línea y devuelve fallo si hubo alguno.",
+      "example": "source demo.mish"
+    },
+    "set": {
+      "detail": "Sin argumentos lista todas las variables; con un prefijo muestra las que coinciden; con NOMBRE=valor la define (indica el valor anterior). Usa comillas para valores con espacios.",
+      "example": "set SALUDO=\"Hola mundo\""
+    },
+    "unset": {
+      "detail": "Elimina variables de entorno de esta sesión y de sus procesos hijos.",
+      "example": "unset SALUDO"
+    },
+    "cd": {
+      "detail": "Sin argumento va al directorio personal. Acepta .., ~, rutas con espacios sin comillas, cd - (directorio anterior) y /d para cambiar de unidad.",
+      "example": "cd -"
+    },
+    "exit": {
+      "detail": "Sale del shell con un código entre 0 y 255. El código predeterminado es 0.",
+      "example": "exit 0"
+    },
+    "sysinfo": {
+      "detail": "Como systeminfo: uso de CPU, RAM y disco, más equipo, usuario, SO, procesador, núcleos, arranque, memoria virtual, procesos activos y tabla de todas las unidades. Requiere contadores y WMI de Windows.",
+      "example": "sysinfo"
+    },
+    "history": {
+      "detail": "Historial numerado. Con un número muestra las últimas N entradas; con texto, las que lo contienen. Arriba/abajo y la sugerencia gris permiten recuperarlas.",
+      "example": "history 10"
+    },
+    "which": {
+      "detail": "Como Get-Command: indica si es interno o externo, versión, tamaño, fecha y ruta. -a lista todas las coincidencias del PATH.",
+      "example": "which -a cmd"
+    },
+    "time": {
+      "detail": "Fecha, hora, zona horaria, UTC, ISO 8601, semana, marca Unix y tiempo encendido.",
+      "example": "time"
+    },
+    "version": {
+      "detail": "Versión de MiShell, runtime de .NET, sistema operativo, arquitectura, equipo y usuario.",
+      "example": "version"
+    },
+    "trace": {
+      "detail": "Muestra en stderr cuándo se crea cada proceso (PID), cuándo la shell espera su finalización y con qué código termina. Útil para ver el ciclo crear, ejecutar y esperar.",
+      "example": "trace on"
+    },
+    "format": {
+      "detail": "Cambia cómo se dibujan las tablas y listas. classic: columnas alineadas con encabezado subrayado, como dir o Get-ChildItem. boxed: tablas con bordes redondeados. Sin argumento muestra el estilo actual. La elección se guarda.",
+      "example": "format boxed"
+    },
+    "top": {
+      "detail": "Monitor en vivo que se actualiza cada segundo: barras de CPU, RAM y disco y los procesos con más memoria. Sale con q, Esc o Ctrl+C. Admite --count N (procesos mostrados) y --every S (segundos entre actualizaciones).",
+      "example": "top --count 8 --every 2"
+    }
+  }
+}

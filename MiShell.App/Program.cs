@@ -64,7 +64,8 @@ services.AddSingleton<IBuiltinCommand>(sp => new HelpCommand(
     sp.GetRequiredService<IOutputRenderer>(),
     sp.GetRequiredService<IServiceProvider>()));
 services.AddSingleton<IBuiltinCommand, VersionCommand>();
-services.AddSingleton<IBuiltinCommand, WhichCommand>();
+services.AddSingleton<IBuiltinCommand>(sp => new WhichCommand(sp.GetRequiredService<IOutputRenderer>(),
+    sp.GetRequiredService<IExecutableResolver>(), sp));
 services.AddSingleton<IBuiltinCommand, TimeCommand>();
 services.AddSingleton<IBuiltinCommand, HistoryCommand>();
 services.AddSingleton<IBuiltinCommand, JobsCommand>();
@@ -74,6 +75,10 @@ services.AddSingleton<IBuiltinCommand, PsCommand>();
 services.AddSingleton<IBuiltinCommand, SysInfoCommand>();
 services.AddSingleton<IBuiltinCommand, ThemeCommand>();
 services.AddSingleton<IBuiltinCommand, SetCommand>();
+services.AddSingleton<IBuiltinCommand, UnsetCommand>();
+services.AddSingleton<IBuiltinCommand, FormatCommand>();
+services.AddSingleton<IBuiltinCommand, TopCommand>();
+services.AddSingleton<IBuiltinCommand, TraceCommand>();
 
 // UI interactiva
 services.AddSingleton(sp => new CompletionProvider(
@@ -82,7 +87,11 @@ services.AddSingleton(sp => new CompletionProvider(
     sp.GetRequiredService<IShellEnvironment>()));
 services.AddSingleton(sp => new LineEditor(
     () => sp.GetRequiredService<HistoryStore>().Entries,
-    line => sp.GetRequiredService<CompletionProvider>().Complete(line)));
+    line => sp.GetRequiredService<CompletionProvider>().Complete(line),
+    name => sp.GetServices<IBuiltinCommand>().Any(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+        || sp.GetRequiredService<IExecutableResolver>().Resolve(name) is not null,
+    () => AnsiColors.Enabled && sp.GetRequiredService<ThemeManager>().Current.Name != "plain",
+    () => sp.GetRequiredService<ThemeManager>().Current));
 services.AddSingleton(new IconProvider(settings.Icons));
 services.AddSingleton(sp => new PromptRenderer(
     sp.GetRequiredService<ThemeManager>(),
@@ -91,6 +100,7 @@ services.AddSingleton(sp => new PromptRenderer(
 services.AddSingleton<Shell>();
 
 await using var provider = services.BuildServiceProvider();
+provider.GetRequiredService<IOutputRenderer>().OutputStyle = settings.OutputStyle;
 var shell = provider.GetRequiredService<Shell>();
 ConsoleCancelEventHandler cancelHandler = (_, e) =>
 {

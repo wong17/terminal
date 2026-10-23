@@ -4,8 +4,10 @@ namespace MiShell.Core.Contracts;
 /// <param name="ExitCode">Código de salida (0 = éxito).</param>
 public sealed record CommandResult(int ExitCode)
 {
+    /// <summary>Resultado exitoso (código 0).</summary>
     public static CommandResult Ok { get; } = new(0);
 
+    /// <summary>Resultado de fallo genérico (código 1).</summary>
     public static CommandResult Failure { get; } = new(1);
 }
 
@@ -14,6 +16,9 @@ public interface ICommandContext
 {
     /// <summary>Directorio de trabajo actual del shell.</summary>
     string WorkingDirectory { get; }
+
+    /// <summary>Directorio en el que estaba el shell antes del último cd (para cd -).</summary>
+    string? PreviousDirectory { get; }
 
     /// <summary>Cambia el directorio de trabajo del shell.</summary>
     void ChangeDirectory(string path);
@@ -29,6 +34,9 @@ public interface ICommandContext
 
     /// <summary>Tabla de procesos en segundo plano.</summary>
     Jobs.IJobTable Jobs { get; }
+
+    /// <summary>Muestra la creación, espera y fin de cada proceso externo.</summary>
+    bool TraceProcesses { get; set; }
 }
 
 /// <summary>Un comando interno del shell (cd, pwd, ps, theme...).</summary>

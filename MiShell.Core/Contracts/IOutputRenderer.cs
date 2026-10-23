@@ -20,6 +20,21 @@ public interface IThemePalette
     ConsoleColor Accent { get; }
 
     ConsoleColor Muted { get; }
+
+    /// <summary>Color de la hora en el prompt, el banner y los monitores.</summary>
+    ConsoleColor Time { get; }
+
+    /// <summary>Color de <c>usuario@equipo</c>.</summary>
+    ConsoleColor Host { get; }
+
+    /// <summary>Color de las etiquetas secundarias (por ejemplo, el nombre del tema en el banner).</summary>
+    ConsoleColor Tag { get; }
+
+    /// <summary>Color de los nombres de comandos (en <c>help</c> y al escribir).</summary>
+    ConsoleColor Command { get; }
+
+    /// <summary>Color de los directorios en los listados.</summary>
+    ConsoleColor Directory { get; }
 }
 
 /// <summary>Punto único de salida hacia el usuario. Core nunca llama a la UI directamente.</summary>
@@ -53,8 +68,23 @@ public interface IOutputRenderer
     /// <summary>Panel tipo neofetch con barras de uso de CPU/RAM/disco.</summary>
     void RenderSystemInfo(SystemUsage usage);
 
-    /// <summary>Tabla genérica con encabezados.</summary>
-    void RenderTable(string title, string[] columns, IEnumerable<string[]> rows);
+    /// <summary>
+    /// Tabla genérica con encabezados. Según el estilo de salida se dibuja con columnas alineadas o con bordes;
+    /// con la salida redirigida se escribe como texto separado por tabuladores.
+    /// </summary>
+    /// <param name="title">Línea que encabeza la tabla (puede ir vacía).</param>
+    /// <param name="columns">Nombres de las columnas.</param>
+    /// <param name="rows">Filas; cada una con una celda por columna.</param>
+    /// <param name="rowColor">Opcional: devuelve el color con que se pinta cada fila (por ejemplo, directorios en el acento del tema).</param>
+    /// <param name="cellColor">Opcional: color de una celda concreta (fila, índice de columna); tiene prioridad sobre <paramref name="rowColor"/>.</param>
+    void RenderTable(string title, string[] columns, IEnumerable<string[]> rows,
+        Func<string[], ConsoleColor?>? rowColor = null, Func<string[], int, ConsoleColor?>? cellColor = null);
+
+    /// <summary>Lista de pares "etiqueta : valor" alineados, como Format-List de PowerShell.</summary>
+    void RenderList(string title, IEnumerable<(string Label, string Value)> items);
+
+    /// <summary>Estilo de tablas y listas: <c>classic</c> (columnas alineadas) o <c>boxed</c> (con bordes).</summary>
+    string OutputStyle { get; set; }
 
     /// <summary>
     /// Ejecuta <paramref name="work"/> mostrando un indicador animado si la tarea
@@ -69,7 +99,13 @@ public interface IOutputRenderer
 /// <param name="Name">Nombre corto del ejecutable.</param>
 /// <param name="CpuSeconds">Tiempo total de CPU consumido, en segundos.</param>
 /// <param name="WorkingSetMb">Memoria de trabajo en MB.</param>
-public sealed record ProcessInfo(int Pid, string Name, double CpuSeconds, double WorkingSetMb);
+/// <param name="Handles">Identificadores abiertos (columna Handles de Get-Process).</param>
+/// <param name="Threads">Número de hilos.</param>
+/// <param name="SessionId">Sesión de Windows (columna SI).</param>
+/// <param name="PrivateMb">Memoria privada en MB (columna PM).</param>
+/// <param name="StartTime">Momento de inicio, si se puede leer.</param>
+public sealed record ProcessInfo(int Pid, string Name, double CpuSeconds, double WorkingSetMb,
+    int Handles = 0, int Threads = 0, int SessionId = 0, double PrivateMb = 0, DateTime? StartTime = null);
 
 /// <summary>Uso global de recursos del sistema.</summary>
 /// <param name="CpuPercent">0–100.</param>

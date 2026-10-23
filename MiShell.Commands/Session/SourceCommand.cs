@@ -13,6 +13,7 @@ public sealed class SourceCommand(IOutputRenderer renderer, IServiceProvider ser
     public string Description => "Ejecuta un script .mish en la sesión actual.";
     public string Usage => "source <archivo.mish>";
 
+    /// <inheritdoc />
     public async Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
     {
         if (arguments.Length != 1)

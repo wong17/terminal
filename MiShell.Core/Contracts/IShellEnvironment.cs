@@ -11,4 +11,7 @@ public interface IShellEnvironment
     string Expand(string text);
 
     IEnumerable<(string Name, string Value)> EnumerateVariables();
+
+    /// <summary>Elimina una variable del entorno del proceso.</summary>
+    void RemoveVariable(string name) => SetVariable(name, string.Empty);
 }

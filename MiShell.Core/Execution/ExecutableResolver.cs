@@ -1,9 +1,11 @@
 namespace MiShell.Core.Execution;
 
+/// <summary>Busca un programa por nombre: rutas explícitas, directorios del PATH y el directorio actual, probando las extensiones .exe, .com, .cmd, .bat y .ps1. Consulta el entorno cada vez, sin caché.</summary>
 public sealed class ExecutableResolver : IExecutableResolver
 {
     private static readonly string[] Extensions = [".exe", ".com", ".cmd", ".bat", ".ps1"];
 
+    /// <summary>Devuelve la ruta completa del programa o null si no existe.</summary>
     public string? Resolve(string name)
     {
         if (name.Contains(Path.DirectorySeparatorChar) || name.Contains(Path.AltDirectorySeparatorChar) || Path.IsPathRooted(name))
