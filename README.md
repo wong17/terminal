@@ -86,7 +86,7 @@ Cada tema asigna un color a un **rol** y el mismo rol se usa en todo el programa
 
 Los temas no cambian el fondo de tu terminal. Los colores son de la paleta de 16 tonos del terminal, así que combinan con el esquema que uses, y el color siempre se acompaña de texto, símbolos y códigos. La preferencia existente del usuario se conserva. `NO_COLOR=1` desactiva el color de MiShell; los programas externos conservan su propio comportamiento. Los archivos redirigidos no reciben colores ni bordes.
 
-## Sintaxis y límites
+## Sintaxis y uso
 
 ```text
 echo Hola > saludo.txt
@@ -106,7 +106,7 @@ echo $SALUDO
 - `&` solo puede terminar una tubería; no se combina con `&&`/`||`. `fg` espera toda la tubería y devuelve el código del último proceso. Los trabajos fallidos muestran código o causa; un fallo de transferencia termina los procesos y libera sus flujos.
 - `kill %1` identifica un job; `kill 1234` identifica un PID. Salir cierra los trabajos que todavía pertenecen a MiShell.
 - `&&`/`||` condicionan la ejecución según el código previo. Las variables se expanden al analizar la línea: define y utiliza una variable en líneas separadas.
-- Las comillas dobles expanden variables; las simples conservan texto literal. No se implementa el lenguaje completo de Bash, escape con barra invertida, comodines ni sustitución de comandos.
+- Las comillas dobles expanden variables; las simples conservan texto literal. La sintaxis es un subconjunto de la de una shell: variables, comillas, operadores y redirecciones, sin escape con barra invertida ni sustitución de comandos.
 - `.cmd`/`.bat` requieren `cmd.exe /c archivo.cmd`; `.ps1` requiere `powershell.exe -File archivo.ps1`.
 - `source` ejecuta líneas y comentarios completos `#`; reporta archivo/línea y conserva un código de fallo si alguna línea falla.
 - Ctrl+C cancela el comando actual; mientras escribes, borra esa entrada. Ctrl+Z o EOF termina la sesión. Flechas recuperan el historial. Tab completa internos, ejecutables del PATH vigente y rutas con espacios, conservando prefijos y comillas; también conserva el texto posterior al cursor.
@@ -129,7 +129,7 @@ pwsh -File .\scripts\verify.ps1 -IncludeSystemInfo
 
 El script usa una carpeta temporal y un perfil aislado, comprueba archivos y salidas, limita la duración de la demo y guarda resultados en `artifacts/validation/`, excluido de Git. `-SkipBuild` reutiliza una compilación Release ya realizada.
 
-Resultado local del 22 de octubre de 2026: **110 pruebas, 0 fallos; Release con 0 advertencias; demo 12/12**. Consulta los alcances de esa evidencia en [validación](docs/validation.md).
+Resultado local del 22 de octubre de 2026: **110 pruebas, 0 fallos; Release con 0 advertencias; demo 12/12**. El detalle está en [validación](docs/validation.md).
 
 ## Organización
 

@@ -1,6 +1,6 @@
 # Cómo MiShell interactúa con Windows
 
-Explicación para la defensa de Arquitectura de Sistemas Operativos; describe la implementación actual y sus límites.
+Explicación técnica de cómo MiShell analiza una línea, crea y espera procesos y conecta sus flujos en Windows.
 
 ## Flujo de una orden
 

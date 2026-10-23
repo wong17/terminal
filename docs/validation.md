@@ -53,7 +53,3 @@ pwsh -File .\scripts\verify.ps1 -IncludeSystemInfo
 El script compila Release, ejecuta la suite y usa un perfil y un directorio temporal independientes. Guarda `build.log`, `tests.log`, `tests.trx`, `demo.stdout.txt`, `demo.stderr.txt` y `summary.json` en `artifacts/validation/`. Ese directorio no se publica: puede contener rutas y datos del equipo.
 
 Para repetir solo la demo tras compilar: `pwsh -File .\scripts\verify.ps1 -SkipBuild`.
-
-## Límites de la evidencia
-
-La verificación se limita a Windows en el equipo de desarrollo; no acredita todas las ACL, procesos descendientes o paletas posibles. Las capturas del informe se generaron con un pseudoterminal, no con Windows Terminal.
