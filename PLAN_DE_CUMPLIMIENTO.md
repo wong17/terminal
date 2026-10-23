@@ -40,7 +40,7 @@ Se revisó el informe oficial `Informe_MiShell_APA7_final.docx` indicado por el 
 | Comandos | Ayuda, ls -l, ps, sysinfo, temas, %job y scripts actualizados |
 | Llamadas al sistema | Correspondencia conceptual con APIs Windows autorizadas |
 | Diagrama | Propiedad, espera y cierre de procesos y flujos |
-| Pruebas y resultados | 72/72; Release sin advertencias; demo 11/11; transcripciones actuales |
+| Pruebas y resultados | 110/110; Release sin advertencias; demo 12/12; transcripciones actuales |
 | Conclusiones | Ajustadas a evidencia comprobada |
 | Recomendaciones | Ayuda, temas, protección de datos y demo reproducible |
 | Bibliografía | Lectura actual de stderr y letras de citas reconciliadas |
@@ -56,3 +56,10 @@ La revisión interactiva se realizó en pseudoterminal; las figuras son transcri
 ## Evidencia
 
 [Validación](docs/validation.md), [guía técnica](docs/technical-guide.md), [defensa](docs/defense.md) y [estado del plan](PLAN.md). Logs y perfiles de prueba están en `artifacts/`, ignorados por Git.
+
+## Cambios del 22 de octubre de 2026
+
+- `ls | findstr.exe txt`: un comando interno puede ser la primera etapa de una tubería (ejemplo `ls | grep txt` de la demostración obligatoria).
+- `trace on|off`: muestra la creación, el PID, la espera y el código de cada proceso, para evidenciar crear, ejecutar y esperar durante la defensa.
+- Editor: comando coloreado según exista, sugerencia gris del historial (→ o Fin la acepta), `help` agrupado y tablas con título propio.
+- Informe reescrito: planteamiento del problema, marco teórico ampliado, diagrama usuario→kernel→recursos, análisis de resultados, conclusiones y recomendaciones.

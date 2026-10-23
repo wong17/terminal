@@ -21,6 +21,9 @@ findstr.exe Hola < saludo.txt > filtrado.txt
 type filtrado.txt
 cmd.exe /c "dir /b" | findstr.exe .txt > listado.txt
 type listado.txt
+# Un comando interno puede alimentar a un programa externo.
+ls | findstr.exe txt > archivos-txt.txt
+type archivos-txt.txt
 
 set DEMO="Windows desde MiShell"
 echo Plataforma: $DEMO

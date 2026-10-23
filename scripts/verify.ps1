@@ -67,11 +67,12 @@ try {
             ExternalPipeline = $stdout.Contains('Hola desde un proceso externo')
             EnvironmentVariable = $stdout.Contains('Plataforma: Windows desde MiShell')
             InputAndOutput = (Get-Content -LiteralPath (Join-Path $workPath '.mish-demo\filtrado.txt') -Raw).Trim() -eq 'Hola desde MiShell'
+            InternalPipeline = (Get-Content -LiteralPath (Join-Path $workPath '.mish-demo\archivos-txt.txt') -Raw).Contains('saludo.txt')
             Append = @(Get-Content -LiteralPath (Join-Path $workPath '.mish-demo\saludo.txt')).Count -eq 2
             BackgroundPipeline = (Get-Content -LiteralPath (Join-Path $workPath '.mish-demo\trabajo.txt') -Raw).Trim() -eq 'trabajo terminado'
             WorkingDirectory = (Get-Content -LiteralPath (Join-Path $workPath 'pwd.txt') -Raw).Trim() -eq $workPath
             CommandHelp = (Get-Content -LiteralPath (Join-Path $workPath 'help-ps.txt') -Raw).Contains('--sort ram|cpu|pid')
-            DetailedListing = (Get-Content -LiteralPath (Join-Path $workPath 'listing.txt') -Raw).Contains('Tamaño (bytes)')
+            DetailedListing = (Get-Content -LiteralPath (Join-Path $workPath 'listing.txt') -Raw).Contains('Modificado')
         }
         $summary = [ordered]@{
             TimestampUtc = [DateTimeOffset]::UtcNow.ToString('o')

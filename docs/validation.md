@@ -9,8 +9,8 @@ Ejecutada el **8 de octubre de 2026 (America/Guatemala)**. Windows 10, versión 
 | Build inicial Debug | 0 errores, 0 advertencias |
 | Suite inicial | 14 aprobadas, 0 fallidas |
 | Build completo final Release | 0 errores, 0 advertencias |
-| Suite final Release | **72 aprobadas, 0 fallidas, 0 omitidas** |
-| Demo aislada con `-IncludeSystemInfo` | **11/11 comprobaciones aprobadas**, salida de error vacía |
+| Suite final Release | **110 aprobadas, 0 fallidas, 0 omitidas** |
+| Demo aislada con `-IncludeSystemInfo` | **12/12 comprobaciones aprobadas**, salida de error vacía |
 | Edición en pseudoterminal | Tab completó pwd y una ruta entre comillas con espacios; flecha arriba recuperó una orden; clear, temas, orden larga y Ctrl+Z funcionaron |
 | Ctrl+C en pseudoterminal | Canceló `Start-Sleep -Seconds 30`, mostró código 130 y permitió ejecutar otra orden |
 | Diff | `git diff --check` sin problemas |

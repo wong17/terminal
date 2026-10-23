@@ -61,7 +61,7 @@ Todos deben explicar una orden desde entrada hasta finalización. Esta distribuc
 
 ## Informe actualizado
 
-El informe oficial `Informe_MiShell_APA7_final.docx` está en la carpeta de clases. Se actualizaron arquitectura, jobs, 72 pruebas, build completo, opciones, colores, evidencias, índice y referencias. El original se conserva en el respaldo externo.
+El informe oficial `Informe_Final_MiShell_Shell_Simple.docx` está en la carpeta de clases. Se actualizaron arquitectura, jobs, 110 pruebas, build completo, opciones, colores, evidencias, índice y referencias. El original se conserva en el respaldo externo.
 
 Las figuras representan transcripciones verificadas; se diferencian de capturas de ventanas. Se preservaron la portada institucional y su fecha histórica; el cuerpo identifica la fecha de actualización.
 

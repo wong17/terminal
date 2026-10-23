@@ -5,7 +5,7 @@ Actualizado el 8 de octubre de 2026: Informe_MiShell_APA7_final.docx.
 - 42 páginas renderizadas con Word y revisadas visualmente.
 - Portada institucional preservada; campos e índice recalculados.
 - 48 requisitos funcionales, 7 no funcionales, 13 tablas y 5 figuras.
-- Jobs completos, 72 pruebas, Release limpio y demo 11/11.
+- Jobs completos, 98 pruebas, Release limpio y demo 12/12.
 - Fragmentos de código actuales y legibles; referencia de stderr corregida.
 - Figuras 2–5: transcripciones verificadas representadas gráficamente, con stdout/stderr identificados.
 - Original preservado en terminal-archive-20261008/closure.
