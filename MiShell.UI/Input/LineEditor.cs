@@ -24,7 +24,7 @@ public sealed class LineEditor(
     /// <summary>Mínimo de columnas para aplicar geometría; debajo se degrada a modo simple.</summary>
     private const int MinUsableWidth = 10;
 
-    /// <summary>Muestra el prompt y edita una línea tecla por tecla (flechas, historial, Tab, sugerencia gris). Devuelve null con Ctrl+Z y cadena vacía con Ctrl+C.</summary>
+    /// <summary>Muestra el prompt y edita una línea tecla por tecla (flechas, historial, Tab, sugerencia gris). Ctrl+C descarta la línea y conserva el prompt; Ctrl+Z devuelve null.</summary>
     public string? ReadLine(string prompt)
     {
         // Con stdin redirigido (pipe/script) no hay teclado: se lee línea a línea.
@@ -58,10 +58,20 @@ public sealed class LineEditor(
                 width = currentWidth;
                 cursorRow = RowOf(prefixWidth + PromptRenderer.VisibleWidth(buffer.ToString()[..cursor]), width);
             }
-            if (key.Modifiers.HasFlag(ConsoleModifiers.Control) && key.Key is ConsoleKey.C or ConsoleKey.Z)
+            if (key.Modifiers.HasFlag(ConsoleModifiers.Control) && key.Key == ConsoleKey.C)
+            {
+                // Ctrl+C descarta lo escrito y deja el mismo prompt limpio, sin apilar prompts nuevos.
+                _ = buffer.Clear();
+                cursor = 0;
+                historyIndex = history.Count;
+                Refresh();
+                continue;
+            }
+
+            if (key.Modifiers.HasFlag(ConsoleModifiers.Control) && key.Key == ConsoleKey.Z)
             {
                 Console.WriteLine();
-                return key.Key == ConsoleKey.Z ? null : string.Empty;
+                return null;
             }
 
             switch (key.Key)
