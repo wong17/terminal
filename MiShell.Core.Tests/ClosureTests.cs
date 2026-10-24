@@ -27,7 +27,7 @@ public sealed class ClosureTests
         var path = f.FilePath("output.txt");
         await File.WriteAllTextAsync(path, "preserve");
         using (var locked = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
-            await Assert.ThrowsAsync<IOException>(() => f.Run("cmd.exe /c echo hello > output.txt"));
+            await Assert.ThrowsAsync<MiShell.Core.Execution.RedirectionException>(() => f.Run("cmd.exe /c echo hello > output.txt"));
         Assert.Equal("preserve", await File.ReadAllTextAsync(path));
     }
 
@@ -118,7 +118,7 @@ public sealed class ClosureTests
         try
         {
             System.IO.FileSystemAclExtensions.SetAccessControl(file, denied);
-            await Assert.ThrowsAsync<UnauthorizedAccessException>(() => f.Run("echo changed > protected.txt"));
+            await Assert.ThrowsAsync<MiShell.Core.Execution.RedirectionException>(() => f.Run("echo changed > protected.txt"));
         }
         finally { System.IO.FileSystemAclExtensions.SetAccessControl(file, original); }
         Assert.Equal("preserve", await File.ReadAllTextAsync(file.FullName));

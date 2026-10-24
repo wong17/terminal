@@ -20,18 +20,20 @@ public sealed class PwdCommand(IOutputRenderer renderer) : IBuiltinCommand
             return Task.FromResult(CommandResult.Failure);
         }
 
-        renderer.WriteLine(context.WorkingDirectory, renderer.Theme.Path);
+        // Como Get-Location: encabezado "Path", subrayado y la ruta en un color propio.
+        renderer.RenderTable(string.Empty, ["Path"], [[context.WorkingDirectory]], cellColor: (_, _) => renderer.Theme.Directory);
         if (arguments.Length != 1) return Task.FromResult(CommandResult.Ok);
-        var rows = new List<string[]> { new[] { "Ruta", context.WorkingDirectory } };
+        var rows = new List<string[]>();
         try
         {
             var drive = new DriveInfo(Path.GetPathRoot(context.WorkingDirectory) ?? "C:\\");
             rows.Add(["Unidad", $"{drive.Name} ({drive.DriveType}, {drive.DriveFormat})"]);
-            rows.Add(["Espacio libre", $"{drive.AvailableFreeSpace / 1024.0 / 1024 / 1024:F1} GiB de {drive.TotalSize / 1024.0 / 1024 / 1024:F1} GiB"]);
+            rows.Add(["Espacio libre", $"{MiShell.Core.ByteFormat.Human(drive.AvailableFreeSpace)} de {MiShell.Core.ByteFormat.Human(drive.TotalSize)}"]);
         }
         catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException) { }
         rows.Add(["Directorio anterior", context.PreviousDirectory ?? "(ninguno)"]);
-        renderer.RenderList("Directorio actual", rows.Select(r => (r[0], r[1])));
+        renderer.WriteLine();
+        renderer.RenderList(string.Empty, rows.Select(r => (r[0], r[1])));
 
         return Task.FromResult(CommandResult.Ok);
     }

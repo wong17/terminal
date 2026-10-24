@@ -20,18 +20,11 @@ internal static class FileFormat
             a.HasFlag(FileAttributes.ReparsePoint) ? 'l' : '-');
     }
 
-    /// <summary>Fecha en formato yyyy-MM-dd HH:mm, igual para todos los listados.</summary>
-    public static string Date(DateTime value) => value.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+    /// <summary>Fecha y hora de 12 horas (<c>22/10/2026 09:41 PM</c>), igual para todos los listados.</summary>
+    public static string Date(DateTime value) => MiShell.Core.ClockFormat.DateAndTime(value);
 
-    /// <summary>Tamaño legible (KiB, MiB, GiB...) a partir de bytes.</summary>
-    public static string Human(long bytes)
-    {
-        string[] units = ["B", "KiB", "MiB", "GiB", "TiB"];
-        var value = (double)bytes;
-        var i = 0;
-        while (value >= 1024 && i < units.Length - 1) { value /= 1024; i++; }
-        return i == 0 ? $"{bytes} B" : $"{value.ToString("F1", CultureInfo.InvariantCulture)} {units[i]}";
-    }
+    /// <summary>Tamaño legible con unidad (B, KB, MB, GB, TB) a partir de bytes.</summary>
+    public static string Human(long bytes) => MiShell.Core.ByteFormat.Human(bytes);
 
     /// <summary>Convierte un patrón con * y ? en una expresión regular que ignora mayúsculas.</summary>
     public static Regex Wildcard(string pattern) =>

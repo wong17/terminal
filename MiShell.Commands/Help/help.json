@@ -2,50 +2,52 @@
   "groups": [
     {
       "name": "Archivos",
-      "commands": [
-        "ls",
-        "dir",
-        "cd",
-        "pwd",
-        "mkdir",
-        "cat",
-        "type",
-        "echo",
-        "clear",
-        "cls"
+      "rows": [
+        { "linux": "ls", "windows": "dir" },
+        { "linux": "cat", "windows": "type" },
+        { "linux": "mkdir", "windows": "md" },
+        { "linux": "rm", "windows": "del", "also": ["erase"] },
+        { "linux": "rmdir", "windows": "rd" },
+        { "linux": "clear", "windows": "cls" },
+        { "linux": "cd" },
+        { "linux": "pwd" },
+        { "linux": "echo" }
       ]
     },
     {
       "name": "Procesos",
-      "commands": [
-        "ps",
-        "top",
-        "jobs",
-        "fg",
-        "kill",
-        "trace",
-        "which"
+      "rows": [
+        { "linux": "ps" },
+        { "linux": "top" },
+        { "linux": "start" },
+        { "linux": "jobs" },
+        { "linux": "fg" },
+        { "linux": "suspend" },
+        { "linux": "resume" },
+        { "linux": "kill" },
+        { "linux": "trace" },
+        { "linux": "which" }
       ]
     },
     {
       "name": "Sesión",
-      "commands": [
-        "set",
-        "unset",
-        "history",
-        "source",
-        "theme",
-        "format",
-        "help",
-        "exit"
+      "rows": [
+        { "linux": "set" },
+        { "linux": "unset" },
+        { "linux": "history" },
+        { "linux": "source" },
+        { "linux": "theme" },
+        { "linux": "format" },
+        { "linux": "help" },
+        { "linux": "exit" }
       ]
     },
     {
       "name": "Sistema",
-      "commands": [
-        "sysinfo",
-        "version",
-        "time"
+      "rows": [
+        { "linux": "sysinfo" },
+        { "linux": "version" },
+        { "linux": "time" }
       ]
     }
   ],
@@ -58,106 +60,407 @@
     "Los internos admiten > y >>; cat y type también <. Solo van al inicio de una tubería y no admiten &.",
     "Ejemplo: echo Hola | findstr.exe Hola > saludo.txt"
   ],
-  "commands": {
-    "ls": {
-      "detail": "Columnas como dir/Get-ChildItem: Modo (d directorio, a archivo, r solo lectura, h oculto, s sistema, l enlace), fecha, tamaño en bytes y nombre; al final, totales y espacio libre. -l añade creación y último acceso, -a muestra ocultos, -h tamaños legibles, -R entra en subcarpetas, -t ordena por fecha, -S por tamaño, -r invierte. Acepta varias rutas y patrones como *.txt.",
-      "example": "ls -lh *.txt"
+  "topics": {
+    "pipes": {
+      "title": "Tuberías (|)",
+      "lines": [
+        "Una tubería conecta la salida de un comando con la entrada del siguiente.",
+        "El primer comando puede ser interno (ls, echo, cat); los siguientes deben ser programas externos (findstr.exe, sort.exe, more.com)."
+      ],
+      "examples": [
+        { "command": "ls | findstr.exe txt", "note": "solo las filas del listado que contienen txt" },
+        { "command": "echo Hola mundo | findstr.exe Hola", "note": "findstr recibe el texto por su entrada" },
+        { "command": "cmd.exe /c dir | findstr.exe .cs | sort.exe", "note": "tres etapas encadenadas" }
+      ]
     },
-    "dir": {
-      "detail": "Alias de ls con las mismas opciones.",
-      "example": "dir -a"
-    },
-    "ps": {
-      "detail": "Como Get-Process: PID, hilos, handles, sesión (SI), CPU acumulada, memoria privada (PM), memoria de trabajo e inicio. Orden predeterminado: RAM descendente. --id PID muestra el detalle de un proceso (ruta, versión, prioridad, memoria pico y virtual). Se omiten procesos protegidos.",
-      "example": "ps 10 --name dotnet --sort cpu"
-    },
-    "kill": {
-      "detail": "%1 identifica un trabajo; un número sin % es un PID. Termina todo el árbol de procesos y acepta varios objetivos a la vez.",
-      "example": "kill %1 4321"
-    },
-    "fg": {
-      "detail": "Espera todos los procesos y la copia de flujos del trabajo. Devuelve el código del último proceso. Ctrl+C termina ese trabajo.",
-      "example": "fg 1"
+    "redirect": {
+      "title": "Redirección (>, >>, <)",
+      "lines": [
+        "> crea el archivo o lo reemplaza; >> añade al final; < toma la entrada desde un archivo.",
+        "MiShell confirma lo ocurrido: Creado, Reemplazado o Añadido, con el tamaño. Si falla, explica por qué.",
+        "No se permite que un archivo sea a la vez entrada y salida, para no perder datos."
+      ],
+      "examples": [
+        { "command": "echo Hola > saludo.txt", "note": "crea saludo.txt y muestra ✓ Creado" },
+        { "command": "echo Otra linea >> saludo.txt", "note": "añade una línea y muestra el tamaño nuevo" },
+        { "command": "cat < saludo.txt", "note": "lee el archivo por la entrada estándar" },
+        { "command": "ls > listado.txt", "note": "guarda el listado de un comando interno" },
+        { "command": "findstr.exe Hola < saludo.txt > salida.txt", "note": "entrada y salida en un programa externo" }
+      ]
     },
     "jobs": {
-      "detail": "Lista los trabajos con PID, estado, resultado, hora de inicio y duración.",
-      "example": "jobs"
+      "title": "Procesos y trabajos en segundo plano",
+      "lines": [
+        "Un programa externo puede correr sin ocupar el prompt: termina la línea con & o lánzalo con start.",
+        "Cada trabajo recibe un número ([1], [2]...). Se maneja con jobs, fg, suspend, resume y kill usando %número o el PID.",
+        "ps y top muestran el estado de cada proceso: Ejecutando, En espera o Suspendido. trace on enseña cómo se crean y esperan."
+      ],
+      "examples": [
+        { "command": "powershell.exe -NoProfile -Command \"Start-Sleep 30\" &", "note": "lanza un trabajo; el prompt vuelve al instante" },
+        { "command": "jobs", "note": "lista número, PID, estado y duración" },
+        { "command": "suspend %1", "note": "pausa el trabajo 1 (estado Suspendido)" },
+        { "command": "resume %1", "note": "lo reanuda" },
+        { "command": "fg 1", "note": "espera a que termine y muestra su código" },
+        { "command": "kill %1", "note": "lo termina con todo su árbol de procesos" }
+      ]
     },
-    "cat": {
-      "detail": "Lee uno o varios archivos (con encabezado por archivo) o stdin. -n numera líneas, --head N y --tail N limitan la salida.",
-      "example": "cat -n --head 5 saludo.txt"
+    "vars": {
+      "title": "Variables de entorno",
+      "lines": [
+        "set NOMBRE=valor define una variable; $NOMBRE la usa. Las comillas dobles expanden variables y las simples no.",
+        "Las variables viven en la sesión y las heredan los programas que lances."
+      ],
+      "examples": [
+        { "command": "set SALUDO=\"Hola mundo\"", "note": "define una variable con espacios" },
+        { "command": "echo $SALUDO", "note": "imprime Hola mundo" },
+        { "command": "set SAL", "note": "lista las variables que empiezan con SAL" },
+        { "command": "unset SALUDO", "note": "la elimina" }
+      ]
+    }
+  },
+  "commands": {
+    "ls": {
+      "detail": "Lista archivos y carpetas con modo (d directorio, a archivo, r solo lectura, h oculto, s sistema, l enlace), fecha y hora de 12 horas, tamaño con unidad y nombre; al final, totales y espacio libre. -l añade creación y último acceso, -a muestra ocultos, -b tamaños exactos en bytes, -R entra en subcarpetas, -t ordena por fecha, -S por tamaño, -r invierte. Acepta varias rutas y patrones como *.txt.",
+      "examples": [
+        { "command": "ls", "note": "contenido de la carpeta actual" },
+        { "command": "ls -l *.txt", "note": "solo los .txt, con las tres fechas" },
+        { "command": "ls -S -r", "note": "del más pequeño al más grande" }
+      ],
+      "equivalent": "Linux ls · cmd dir · PowerShell Get-ChildItem",
+      "seeAlso": ["cd", "rm", "cat"]
     },
-    "type": {
-      "detail": "Alias de cat con las mismas opciones.",
-      "example": "type saludo.txt otro.txt"
-    },
-    "mkdir": {
-      "detail": "Crea la ruta completa (como mkdir -p), muestra una tabla con lo creado e informa lo que ya existía.",
-      "example": "mkdir proyecto/src/datos"
-    },
-    "pwd": {
-      "detail": "Muestra el directorio actual. -v añade unidad, formato, espacio libre y directorio anterior.",
-      "example": "pwd -v"
-    },
-    "echo": {
-      "detail": "-n omite el salto de línea; -e interpreta las secuencias de escape con barra invertida (n, t y barra).",
-      "example": "echo -e \"a\\tb\""
-    },
-    "theme": {
-      "detail": "contrast: fondo oscuro; paper: fondo claro; plain: sin color. La elección se guarda para próximas sesiones.",
-      "example": "theme contrast"
-    },
-    "source": {
-      "detail": "Ejecuta cada línea en la sesión actual. Ignora líneas vacías y comentarios #. Continúa tras errores, informa archivo/línea y devuelve fallo si hubo alguno.",
-      "example": "source demo.mish"
-    },
-    "set": {
-      "detail": "Sin argumentos lista todas las variables; con un prefijo muestra las que coinciden; con NOMBRE=valor la define (indica el valor anterior). Usa comillas para valores con espacios.",
-      "example": "set SALUDO=\"Hola mundo\""
-    },
-    "unset": {
-      "detail": "Elimina variables de entorno de esta sesión y de sus procesos hijos.",
-      "example": "unset SALUDO"
+    "dir": {
+      "detail": "Es el nombre de ls en Windows; admite las mismas opciones.",
+      "examples": [
+        { "command": "dir", "note": "contenido de la carpeta actual" },
+        { "command": "dir -a", "note": "incluye archivos ocultos" }
+      ],
+      "equivalent": "Linux ls · cmd dir · PowerShell Get-ChildItem",
+      "seeAlso": ["ls"]
     },
     "cd": {
       "detail": "Sin argumento va al directorio personal. Acepta .., ~, rutas con espacios sin comillas, cd - (directorio anterior) y /d para cambiar de unidad.",
-      "example": "cd -"
+      "examples": [
+        { "command": "cd Documentos", "note": "entra en una carpeta" },
+        { "command": "cd ..", "note": "sube un nivel" },
+        { "command": "cd -", "note": "vuelve al directorio anterior" }
+      ],
+      "equivalent": "Linux cd · cmd cd · PowerShell Set-Location",
+      "seeAlso": ["pwd", "ls"]
     },
-    "exit": {
-      "detail": "Sale del shell con un código entre 0 y 255. El código predeterminado es 0.",
-      "example": "exit 0"
+    "pwd": {
+      "detail": "Muestra el directorio actual con un encabezado Path, como Get-Location. -v añade unidad, formato, espacio libre y el directorio anterior.",
+      "examples": [
+        { "command": "pwd", "note": "ruta actual" },
+        { "command": "pwd -v", "note": "con unidad y espacio libre" }
+      ],
+      "equivalent": "Linux pwd · cmd cd · PowerShell Get-Location",
+      "seeAlso": ["cd"]
     },
-    "sysinfo": {
-      "detail": "Como systeminfo: uso de CPU, RAM y disco, más equipo, usuario, SO, procesador, núcleos, arranque, memoria virtual, procesos activos y tabla de todas las unidades. Requiere contadores y WMI de Windows.",
-      "example": "sysinfo"
+    "mkdir": {
+      "detail": "Crea la ruta completa (como mkdir -p), muestra una tabla con lo creado e informa lo que ya existía.",
+      "examples": [
+        { "command": "mkdir proyecto", "note": "una carpeta" },
+        { "command": "mkdir proyecto/src/datos", "note": "crea también las carpetas intermedias" }
+      ],
+      "equivalent": "Linux mkdir -p · cmd md · PowerShell New-Item -ItemType Directory",
+      "seeAlso": ["rmdir", "ls"]
     },
-    "history": {
-      "detail": "Historial numerado. Con un número muestra las últimas N entradas; con texto, las que lo contienen. Arriba/abajo y la sugerencia gris permiten recuperarlas.",
-      "example": "history 10"
+    "md": {
+      "detail": "Es el nombre de mkdir en Windows.",
+      "examples": [
+        { "command": "md reportes", "note": "crea la carpeta reportes" }
+      ],
+      "equivalent": "Linux mkdir -p · cmd md · PowerShell New-Item -ItemType Directory",
+      "seeAlso": ["mkdir"]
     },
-    "which": {
-      "detail": "Como Get-Command: indica si es interno o externo, versión, tamaño, fecha y ruta. -a lista todas las coincidencias del PATH.",
-      "example": "which -a cmd"
+    "rm": {
+      "detail": "Elimina archivos y patrones. Una carpeta requiere -r y, si tiene contenido, pide confirmación [s/N] salvo que uses -f. -f también permite borrar archivos de solo lectura y no avisa si no existe. Nunca borra la raíz de una unidad ni la carpeta actual. La eliminación es permanente.",
+      "examples": [
+        { "command": "rm saludo.txt", "note": "borra un archivo y muestra ✓ Eliminado" },
+        { "command": "rm *.tmp", "note": "borra todos los .tmp de la carpeta" },
+        { "command": "rm -r carpeta", "note": "pregunta antes de borrar la carpeta y su contenido" },
+        { "command": "rm -r -f carpeta", "note": "sin preguntar" }
+      ],
+      "equivalent": "Linux rm · cmd del / rd /s /q · PowerShell Remove-Item",
+      "seeAlso": ["rmdir", "ls"]
     },
-    "time": {
-      "detail": "Fecha, hora, zona horaria, UTC, ISO 8601, semana, marca Unix y tiempo encendido.",
-      "example": "time"
+    "del": {
+      "detail": "Es el nombre de rm en Windows para archivos y patrones; acepta /s (o -r) y /q (o -f).",
+      "examples": [
+        { "command": "del saludo.txt", "note": "borra un archivo" },
+        { "command": "del *.log", "note": "borra los .log" }
+      ],
+      "equivalent": "Linux rm · cmd del · PowerShell Remove-Item",
+      "seeAlso": ["rm", "rd"]
     },
-    "version": {
-      "detail": "Versión de MiShell, runtime de .NET, sistema operativo, arquitectura, equipo y usuario.",
-      "example": "version"
+    "erase": {
+      "detail": "Sinónimo de del.",
+      "examples": [
+        { "command": "erase viejo.txt", "note": "borra el archivo" }
+      ],
+      "equivalent": "cmd erase · Linux rm",
+      "seeAlso": ["del"]
+    },
+    "rmdir": {
+      "detail": "Elimina carpetas. Sin -r solo borra carpetas vacías; con -r (o /s) borra también el contenido, pidiendo confirmación salvo con -f (o /q).",
+      "examples": [
+        { "command": "rmdir vacia", "note": "borra una carpeta vacía" },
+        { "command": "rmdir -r proyecto", "note": "pide confirmación y borra todo" },
+        { "command": "rmdir -r -f proyecto", "note": "sin preguntar" }
+      ],
+      "equivalent": "Linux rmdir / rm -r · cmd rd /s /q · PowerShell Remove-Item -Recurse",
+      "seeAlso": ["rm", "mkdir"]
+    },
+    "rd": {
+      "detail": "Es el nombre de rmdir en Windows; acepta /s y /q.",
+      "examples": [
+        { "command": "rd /s carpeta", "note": "borra la carpeta con su contenido, con confirmación" },
+        { "command": "rd /s /q carpeta", "note": "sin confirmación" }
+      ],
+      "equivalent": "Linux rmdir · cmd rd · PowerShell Remove-Item -Recurse",
+      "seeAlso": ["rmdir"]
+    },
+    "cat": {
+      "detail": "Lee uno o varios archivos (con encabezado por archivo) o la entrada estándar. -n numera líneas, --head N y --tail N limitan la salida.",
+      "examples": [
+        { "command": "cat notas.txt", "note": "muestra el archivo" },
+        { "command": "cat -n --head 5 notas.txt", "note": "primeras cinco líneas numeradas" },
+        { "command": "cat < notas.txt", "note": "lee por redirección de entrada" }
+      ],
+      "equivalent": "Linux cat · cmd type · PowerShell Get-Content",
+      "seeAlso": ["echo", "ls"]
+    },
+    "type": {
+      "detail": "Es el nombre de cat en Windows; admite las mismas opciones.",
+      "examples": [
+        { "command": "type saludo.txt otro.txt", "note": "dos archivos, cada uno con su encabezado" }
+      ],
+      "equivalent": "Linux cat · cmd type · PowerShell Get-Content",
+      "seeAlso": ["cat"]
+    },
+    "echo": {
+      "detail": "Imprime texto. -n omite el salto de línea; -e interpreta \\n, \\t y \\\\. Con > o >> crea o amplía un archivo y confirma el resultado.",
+      "examples": [
+        { "command": "echo Hola mundo", "note": "imprime el texto" },
+        { "command": "echo Hola > saludo.txt", "note": "crea el archivo y confirma ✓ Creado" },
+        { "command": "echo -e \"a\\tb\"", "note": "con tabulador" }
+      ],
+      "equivalent": "Linux echo · cmd echo · PowerShell Write-Output",
+      "seeAlso": ["cat", "set"]
+    },
+    "clear": {
+      "detail": "Limpia la pantalla.",
+      "examples": [
+        { "command": "clear", "note": "deja la pantalla vacía" }
+      ],
+      "equivalent": "Linux clear · cmd cls · PowerShell Clear-Host",
+      "seeAlso": ["cls"]
+    },
+    "cls": {
+      "detail": "Es el nombre de clear en Windows.",
+      "examples": [
+        { "command": "cls", "note": "deja la pantalla vacía" }
+      ],
+      "equivalent": "Linux clear · cmd cls · PowerShell Clear-Host",
+      "seeAlso": ["clear"]
+    },
+    "ps": {
+      "detail": "Lista TODOS los procesos que Windows permite leer: PID, nombre, estado (Ejecutando, En espera, Suspendido), hilos, tiempo de CPU, memoria con unidad, porcentaje de RAM, inicio y una barra. Orden predeterminado: memoria. -l añade handles, sesión y memoria privada; --chart dibuja las barras de memoria; --group suma los procesos de un mismo programa; --name filtra; --sort ram|cpu|pid ordena; --id PID detalla un proceso.",
+      "examples": [
+        { "command": "ps", "note": "los 15 procesos con más memoria" },
+        { "command": "ps 10 --name chrome --sort cpu", "note": "10 procesos de chrome por CPU" },
+        { "command": "ps 12 --chart --group", "note": "gráfico de memoria por programa" },
+        { "command": "ps --id 4321", "note": "ruta, prioridad, memoria pico y núcleos permitidos" }
+      ],
+      "equivalent": "Linux ps aux · cmd tasklist · PowerShell Get-Process",
+      "seeAlso": ["top", "kill", "suspend"]
+    },
+    "top": {
+      "detail": "Monitor en vivo que se actualiza cada segundo: barras por núcleo, CPU y RAM con su historial, contadores de procesos por estado y una tabla que llena la ventana (PID, nombre, estado, CPU %, núcleos usados, hilos, memoria). Teclas: flechas y RePág/AvPág desplazan; c, m, p, n, e ordenan por CPU, memoria, PID, nombre o estado; q o Esc salen. --pid N o --job %1 vigila un solo proceso con su historial. Windows no informa en qué núcleo corre cada proceso: 'Núcleos' indica cuántos núcleos equivalentes consume.",
+      "examples": [
+        { "command": "top", "note": "monitor a pantalla completa" },
+        { "command": "top --every 2", "note": "actualiza cada 2 segundos" },
+        { "command": "top --pid 4321", "note": "vigila un solo proceso" },
+        { "command": "top --once", "note": "un solo cuadro, útil para redirigir" }
+      ],
+      "equivalent": "Linux top / htop · cmd (sin equivalente) · PowerShell Get-Process | Sort CPU",
+      "seeAlso": ["ps", "sysinfo"]
+    },
+    "start": {
+      "detail": "Lanza un programa externo en segundo plano y devuelve el prompt al instante. Es lo mismo que terminar la línea con &. Se registra como trabajo para manejarlo con jobs, fg, suspend, resume y kill.",
+      "examples": [
+        { "command": "start notepad.exe", "note": "abre el Bloc de notas como trabajo [1]" },
+        { "command": "start powershell.exe -NoProfile -Command \"Start-Sleep 30\"", "note": "un proceso que dura 30 segundos" },
+        { "command": "jobs", "note": "lo ves en la lista con su PID" }
+      ],
+      "equivalent": "Linux programa & · cmd start · PowerShell Start-Process",
+      "seeAlso": ["jobs", "fg", "kill"]
+    },
+    "jobs": {
+      "detail": "Lista los trabajos en segundo plano con número, PID, estado (corriendo, suspendido, terminado), resultado, hora de inicio, duración y comando.",
+      "examples": [
+        { "command": "start powershell.exe -NoProfile -Command \"Start-Sleep 30\"", "note": "lanza un trabajo" },
+        { "command": "jobs", "note": "lo muestra como corriendo" },
+        { "command": "fg 1", "note": "espera a que termine" }
+      ],
+      "equivalent": "Linux jobs · cmd tasklist · PowerShell Get-Job",
+      "seeAlso": ["start", "fg", "kill"]
+    },
+    "fg": {
+      "detail": "Trae un trabajo al primer plano: espera a que sus procesos terminen y devuelve el código de salida de su última etapa. Sin número usa el último trabajo. Ctrl+C termina el trabajo.",
+      "examples": [
+        { "command": "powershell.exe -NoProfile -Command \"Start-Sleep 5\" &", "note": "lanza el trabajo [1]" },
+        { "command": "fg 1", "note": "el prompt espera hasta que termine y muestra su código" },
+        { "command": "fg", "note": "sin número, el último trabajo" }
+      ],
+      "equivalent": "Linux fg · cmd (sin equivalente) · PowerShell Wait-Job",
+      "seeAlso": ["jobs", "kill", "start"]
+    },
+    "suspend": {
+      "detail": "Pausa un proceso o un trabajo sin terminarlo: deja de recibir CPU y su estado pasa a Suspendido. Se reanuda con resume. No permite suspender a MiShell ni procesos protegidos.",
+      "examples": [
+        { "command": "suspend %1", "note": "pausa el trabajo 1" },
+        { "command": "suspend 4321", "note": "pausa el proceso con ese PID" },
+        { "command": "ps --id 4321", "note": "muestra el estado Suspendido" }
+      ],
+      "equivalent": "Linux kill -STOP · cmd pssuspend · PowerShell Suspend-Process",
+      "seeAlso": ["resume", "kill", "jobs"]
+    },
+    "resume": {
+      "detail": "Reanuda un proceso o trabajo pausado con suspend.",
+      "examples": [
+        { "command": "resume %1", "note": "continúa el trabajo 1" },
+        { "command": "resume 4321", "note": "continúa el proceso con ese PID" }
+      ],
+      "equivalent": "Linux kill -CONT · cmd pssuspend -r · PowerShell Resume-Process",
+      "seeAlso": ["suspend", "jobs"]
+    },
+    "kill": {
+      "detail": "%1 identifica un trabajo; un número sin % es un PID. Termina todo el árbol de procesos y acepta varios objetivos a la vez. Es permanente: el proceso no guarda su trabajo.",
+      "examples": [
+        { "command": "jobs", "note": "mira los números de trabajo" },
+        { "command": "kill %1", "note": "termina el trabajo 1" },
+        { "command": "kill 4321 4322", "note": "termina dos procesos por PID" }
+      ],
+      "equivalent": "Linux kill · cmd taskkill /PID · PowerShell Stop-Process",
+      "seeAlso": ["jobs", "ps", "suspend"]
     },
     "trace": {
-      "detail": "Muestra en stderr cuándo se crea cada proceso (PID), cuándo la shell espera su finalización y con qué código termina. Útil para ver el ciclo crear, ejecutar y esperar.",
-      "example": "trace on"
+      "detail": "Con trace on, cada programa externo muestra en stderr cuándo se crea (con su PID), cuándo la shell lo espera y con qué código termina: el ciclo crear, ejecutar y esperar. trace off lo apaga y trace sin argumento muestra el estado.",
+      "examples": [
+        { "command": "trace on", "note": "activa el seguimiento" },
+        { "command": "cmd.exe /c echo Hola", "note": "verás [trace] creando proceso, proceso iniciado: PID, esperando y código 0" },
+        { "command": "trace off", "note": "lo desactiva" }
+      ],
+      "equivalent": "Linux strace / set -x · cmd (sin equivalente) · PowerShell Trace-Command",
+      "seeAlso": ["start", "jobs"]
+    },
+    "which": {
+      "detail": "Indica si un nombre es un comando interno o un programa externo y de dónde sale: tipo, versión, tamaño, fecha y ruta. -a lista todas las coincidencias del PATH. Sirve para saber qué se ejecutaría al escribirlo.",
+      "examples": [
+        { "command": "which ls", "note": "interno de MiShell" },
+        { "command": "which cmd", "note": "externo: ruta de cmd.exe" },
+        { "command": "which -a python", "note": "todas las copias en el PATH" }
+      ],
+      "equivalent": "Linux which · cmd where · PowerShell Get-Command",
+      "seeAlso": ["help", "start"]
+    },
+    "set": {
+      "detail": "Sin argumentos lista todas las variables; con un prefijo muestra las que coinciden; con NOMBRE=valor la define (indica el valor anterior). Usa comillas para valores con espacios.",
+      "examples": [
+        { "command": "set", "note": "todas las variables" },
+        { "command": "set SALUDO=\"Hola mundo\"", "note": "define una variable" },
+        { "command": "echo $SALUDO", "note": "la usa" }
+      ],
+      "equivalent": "Linux export · cmd set · PowerShell $env:NOMBRE",
+      "seeAlso": ["unset", "echo"]
+    },
+    "unset": {
+      "detail": "Elimina variables de entorno de esta sesión y de sus procesos hijos.",
+      "examples": [
+        { "command": "unset SALUDO", "note": "la elimina" }
+      ],
+      "equivalent": "Linux unset · cmd set NOMBRE= · PowerShell Remove-Item Env:",
+      "seeAlso": ["set"]
+    },
+    "history": {
+      "detail": "Historial numerado. Con un número muestra las últimas N entradas; con texto, las que lo contienen. Las flechas arriba y abajo y la sugerencia gris permiten recuperarlas.",
+      "examples": [
+        { "command": "history 10", "note": "las últimas 10" },
+        { "command": "history ls", "note": "las que contienen ls" }
+      ],
+      "equivalent": "Linux history · cmd doskey /history · PowerShell Get-History",
+      "seeAlso": ["help"]
+    },
+    "source": {
+      "detail": "Ejecuta cada línea de un archivo en la sesión actual. Ignora líneas vacías y comentarios #. Continúa tras errores, informa archivo y línea y devuelve fallo si hubo alguno.",
+      "examples": [
+        { "command": "source demo.mish", "note": "ejecuta el guion de demostración" }
+      ],
+      "equivalent": "Linux source · cmd call · PowerShell . .\\script.ps1",
+      "seeAlso": ["cat", "history"]
+    },
+    "theme": {
+      "detail": "contrast: fondo oscuro; paper: fondo claro; plain: sin color. theme list muestra todos. La elección se guarda para próximas sesiones.",
+      "examples": [
+        { "command": "theme list", "note": "temas disponibles" },
+        { "command": "theme paper", "note": "cambia al tema claro" }
+      ],
+      "equivalent": "Propio de MiShell",
+      "seeAlso": ["format"]
     },
     "format": {
       "detail": "Cambia cómo se dibujan las tablas y listas. classic: columnas alineadas con encabezado subrayado, como dir o Get-ChildItem. boxed: tablas con bordes redondeados. Sin argumento muestra el estilo actual. La elección se guarda.",
-      "example": "format boxed"
+      "examples": [
+        { "command": "format boxed", "note": "tablas con bordes" },
+        { "command": "format classic", "note": "vuelve a columnas alineadas" }
+      ],
+      "equivalent": "Propio de MiShell (PowerShell Format-Table)",
+      "seeAlso": ["theme"]
     },
-    "top": {
-      "detail": "Monitor en vivo que se actualiza cada segundo: barras de CPU, RAM y disco y los procesos con más memoria. Sale con q, Esc o Ctrl+C. Admite --count N (procesos mostrados) y --every S (segundos entre actualizaciones).",
-      "example": "top --count 8 --every 2"
+    "help": {
+      "detail": "Sin argumentos muestra todos los comandos agrupados, con su nombre en Linux y en Windows. help COMANDO explica uno con ejemplos; help pipes, help redirect, help jobs y help vars explican los temas; help syntax resume los operadores.",
+      "examples": [
+        { "command": "help", "note": "todos los comandos" },
+        { "command": "help ps", "note": "ayuda de un comando" },
+        { "command": "help pipes", "note": "cómo usar tuberías" }
+      ],
+      "equivalent": "Linux man / --help · cmd help · PowerShell Get-Help",
+      "seeAlso": ["which"]
+    },
+    "exit": {
+      "detail": "Sale del shell con un código entre 0 y 255. El código predeterminado es 0. Los trabajos que sigan activos se terminan.",
+      "examples": [
+        { "command": "exit", "note": "sale con código 0" },
+        { "command": "exit 3", "note": "sale con código 3" }
+      ],
+      "equivalent": "Linux exit · cmd exit · PowerShell exit",
+      "seeAlso": ["jobs"]
+    },
+    "sysinfo": {
+      "detail": "Como systeminfo: uso de CPU, RAM y disco con barras, carga por núcleo, equipo, usuario, SO, procesador, arranque, memoria virtual, procesos activos y tabla de todas las unidades. La CPU es una muestra de 300 ms; RAM y disco son instantáneas. Requiere contadores y WMI de Windows.",
+      "examples": [
+        { "command": "sysinfo", "note": "panel completo del equipo" }
+      ],
+      "equivalent": "Linux neofetch / lscpu · cmd systeminfo · PowerShell Get-ComputerInfo",
+      "seeAlso": ["top", "ps"]
+    },
+    "version": {
+      "detail": "Versión de MiShell, del runtime de .NET y del sistema operativo, junto con el equipo de desarrollo y la asignatura.",
+      "examples": [
+        { "command": "version", "note": "versión y créditos" }
+      ],
+      "equivalent": "Linux --version · cmd ver · PowerShell $PSVersionTable",
+      "seeAlso": ["sysinfo"]
+    },
+    "time": {
+      "detail": "Fecha, hora, zona horaria, UTC, ISO 8601, semana, marca Unix y tiempo encendido.",
+      "examples": [
+        { "command": "time", "note": "fecha y hora actuales con todos sus formatos" }
+      ],
+      "equivalent": "Linux date · cmd time /t, date /t · PowerShell Get-Date",
+      "seeAlso": ["sysinfo"]
     }
   }
 }

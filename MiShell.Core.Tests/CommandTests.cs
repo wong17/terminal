@@ -29,9 +29,9 @@ public sealed class CommandTests
         var (code, output) = await Run(f, new ListDirectoryCommand(f.Renderer, "ls"));
         Assert.Equal(0, code);
         Assert.Contains("Modo\tModificado\tTamaño\tNombre", output);
-        Assert.Matches(@"-a----\t\d{4}-\d\d-\d\d \d\d:\d\d\t3\tsample\.txt", output);
-        Assert.Matches(@"d-----\t\d{4}-\d\d-\d\d \d\d:\d\d\t\tcarpeta", output);
-        Assert.Contains("1 archivos (3 bytes) · 1 directorios", output);
+        Assert.Matches(@"-a----\t\d\d/\d\d/\d{4} \d\d:\d\d [AP]M\t3 B\tsample\.txt", output);
+        Assert.Matches(@"d-----\t\d\d/\d\d/\d{4} \d\d:\d\d [AP]M\t\tcarpeta", output);
+        Assert.Contains("1 archivos (3 B) · 1 directorios", output);
     }
 
     [Fact]
@@ -70,7 +70,8 @@ public sealed class CommandTests
         Assert.Contains("a.txt", filtered);
         Assert.DoesNotContain("b.png", filtered);
         Assert.Contains("inner.txt", (await Run(f, ls, "-R")).Output);
-        Assert.Contains("2.0 KiB", (await Run(f, ls, "-h")).Output);
+        Assert.Contains("2.0 KB", (await Run(f, ls)).Output);
+        Assert.Contains("2,048 B", (await Run(f, ls, "-b")).Output);
     }
 
     [Fact]
@@ -226,7 +227,7 @@ public sealed class CommandTests
         await using var f = new ExecutionFixture();
         var (code, output) = await Run(f, new PsCommand(f.Renderer), "3", "--sort", "pid");
         Assert.Equal(0, code);
-        Assert.Contains("PID\tNombre\tHilos\tHandles\tSI\tCPU (s)\tPM (MiB)\tRAM (MiB)\tInicio", output);
+        Assert.Contains("PID\tNombre\tEstado\tHilos\tCPU\tMemoria\t% RAM\tInicio", output);
     }
 
     [Fact]
@@ -253,9 +254,9 @@ public sealed class CommandTests
     public void HelpCatalogLoadsGroupsSyntaxAndDetailsFromEmbeddedJson()
     {
         var catalog = HelpCatalog.LoadEmbedded();
-        Assert.Contains(catalog.Groups, g => g.Name == "Archivos" && g.Commands.Contains("ls"));
+        Assert.Contains(catalog.Groups, g => g.Name == "Archivos" && g.Rows.Any(r => r.Names.Contains("ls")));
         Assert.NotEmpty(catalog.Syntax);
-        Assert.Contains("Modo", catalog.Commands["LS"].Detail);
+        Assert.Contains("modo", catalog.Commands["LS"].Detail);
     }
 
     [Fact]

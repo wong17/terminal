@@ -5,13 +5,13 @@ using System.Text.RegularExpressions;
 namespace MiShell.Commands.BuiltinCommands;
 
 /// <summary>Crea uno o varios directorios (con padres, como mkdir -p y como mkdir de Windows) y muestra lo creado.</summary>
-public sealed class MakeDirectoryCommand(IOutputRenderer renderer) : IBuiltinCommand
+public sealed class MakeDirectoryCommand(IOutputRenderer renderer, string name = "mkdir") : IBuiltinCommand
 {
-    public string Name => "mkdir";
+    public string Name { get; } = name;
 
     public string Description => "Crea directorios (con sus padres) y muestra el resultado.";
 
-    public string Usage => "mkdir [-p] <ruta> [ruta...]";
+    public string Usage => $"{Name} [-p] <ruta> [ruta...]";
 
     /// <inheritdoc />
     public Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
@@ -67,7 +67,7 @@ public sealed class MakeDirectoryCommand(IOutputRenderer renderer) : IBuiltinCom
 
         foreach (var path in existing)
             renderer.WriteInfo($"Ya existía: {path}");
-        renderer.WriteSuccess($"{created.Count} creados · {existing.Count} ya existían.");
+        if (paths.Length > 1) renderer.WriteSuccess($"{created.Count} creados · {existing.Count} ya existían.");
         return Task.FromResult(failed ? CommandResult.Failure : CommandResult.Ok);
     }
 }

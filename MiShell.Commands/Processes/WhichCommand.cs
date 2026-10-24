@@ -44,8 +44,8 @@ public sealed class WhichCommand(IOutputRenderer renderer, IExecutableResolver r
                 {
                     var info = new FileInfo(path);
                     var version = System.Diagnostics.FileVersionInfo.GetVersionInfo(path).FileVersion ?? "-";
-                    rows.Add(["externo", Path.GetFileName(path), version, info.Length.ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
-                        info.LastWriteTime.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture), path]);
+                    rows.Add(["externo", Path.GetFileName(path), version, MiShell.Core.ByteFormat.Human(info.Length),
+                        MiShell.Core.ClockFormat.DateAndTime(info.LastWriteTime), path]);
                     found = true;
                     if (!all) break;
                 }
@@ -62,7 +62,7 @@ public sealed class WhichCommand(IOutputRenderer renderer, IExecutableResolver r
         }
 
         if (rows.Count > 0)
-            renderer.RenderTable("Comandos encontrados", ["Tipo", "Nombre", "Versión", "Tamaño (bytes)", "Modificado", "Origen"], rows,
+            renderer.RenderTable("Comandos encontrados", ["Tipo", "Nombre", "Versión", "Tamaño", "Modificado", "Origen"], rows,
                 cellColor: (row, column) => column switch
                 {
                     0 => row[0] == "interno" ? renderer.Theme.Command : renderer.Theme.Info,

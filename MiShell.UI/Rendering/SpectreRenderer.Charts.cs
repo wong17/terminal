@@ -7,13 +7,15 @@ namespace MiShell.UI.Rendering;
 public sealed partial class SpectreRenderer
 {
     /// <inheritdoc />
-    public void RenderBarChart(string title, IEnumerable<(string Label, double Value, string ColorHint)> items, string valueSuffix)
+    public void RenderBarChart(string title, IEnumerable<(string Label, double Value, string ColorHint)> items, string valueSuffix, Func<double, string>? format = null)
     {
         var list = items.ToArray();
+        string Value(double v) => format?.Invoke(v) ?? v.ToString("F1", Invariant);
+        var heading = format is null ? $"{title} ({valueSuffix})" : title;
         if (IsPlain)
         {
-            RenderTable(title, ["Proceso", $"Memoria ({valueSuffix})"],
-                list.Select(i => (string[])[i.Label, i.Value.ToString("F1", Invariant)]));
+            RenderTable(heading, ["Nombre", valueSuffix.Length > 0 ? $"Valor ({valueSuffix})" : "Valor"],
+                list.Select(i => (string[])[i.Label, Value(i.Value)]));
             return;
         }
 
@@ -21,7 +23,7 @@ public sealed partial class SpectreRenderer
         {
             var chart = new BarChart()
                 .Width(60)
-                .Label($"[bold]{Markup.Escape(title)} ({Markup.Escape(valueSuffix)})[/]")
+                .Label($"[bold]{Markup.Escape(heading)}[/]")
                 .CenterLabel();
             foreach (var (label, value, colorHint) in list)
                 chart.AddItem(Markup.Escape(Truncate(label, 28)), value, HexColor(colorHint));
@@ -30,11 +32,15 @@ public sealed partial class SpectreRenderer
         }
 
         var theme = themeManager.Current;
-        _writer.WriteLine(Format($"  {title} ({valueSuffix})", theme.Accent));
+        _writer.WriteLine(Format($"  {heading}", theme.Accent));
         var max = Math.Max(1, list.Length == 0 ? 1 : list.Max(i => i.Value));
         var labelWidth = list.Length == 0 ? 0 : list.Max(i => Math.Min(24, i.Label.Length));
-        foreach (var (label, value, _) in list)
-            _writer.WriteLine($"{Truncate(label, 24).PadRight(labelWidth)} {Format(BuildMiniBar(value / max, 40), theme.Accent)} {value.ToString("F1", Invariant)}");
+        var valueWidth = list.Length == 0 ? 0 : list.Max(i => Value(i.Value).Length);
+        foreach (var (label, value, hint) in list)
+        {
+            var color = hint switch { "red" => theme.ErrorColor, "yellow" => theme.Info, _ => theme.Accent };
+            _writer.WriteLine($"  {Truncate(label, 24).PadRight(labelWidth)} {Format(BuildMiniBar(value / max, 40), color)} {Value(value).PadLeft(valueWidth)}");
+        }
     }
 
     /// <inheritdoc />
@@ -46,10 +52,10 @@ public sealed partial class SpectreRenderer
             RenderTable("Sistema", ["Recurso", "Uso"],
             [
                 ["CPU", $"{usage.CpuPercent:F1}%"],
-                ["RAM (MiB)", $"{usage.RamUsedMb:F0} / {usage.RamTotalMb:F0}"],
-                ["RAM libre (MiB)", $"{usage.RamTotalMb - usage.RamUsedMb:F0}"],
-                ["Disco (GiB)", $"{usage.DiskUsedGb:F1} / {usage.DiskTotalGb:F1}"],
-                ["Disco libre (GiB)", $"{usage.DiskTotalGb - usage.DiskUsedGb:F1}"],
+                ["RAM", $"{MiShell.Core.ByteFormat.FromMegabytes(usage.RamUsedMb)} / {MiShell.Core.ByteFormat.FromMegabytes(usage.RamTotalMb)}"],
+                ["RAM libre", MiShell.Core.ByteFormat.FromMegabytes(usage.RamTotalMb - usage.RamUsedMb)],
+                ["Disco", $"{MiShell.Core.ByteFormat.Human((long)(usage.DiskUsedGb * 1073741824))} / {MiShell.Core.ByteFormat.Human((long)(usage.DiskTotalGb * 1073741824))}"],
+                ["Disco libre", MiShell.Core.ByteFormat.Human((long)((usage.DiskTotalGb - usage.DiskUsedGb) * 1073741824))],
             ]);
             return;
         }
@@ -64,8 +70,8 @@ public sealed partial class SpectreRenderer
             foreach (var (name, ratio, detail) in new[]
             {
                 ("CPU", cpu, string.Empty),
-                ("RAM", ram, $"{usage.RamUsedMb.ToString("F0", Invariant)} / {usage.RamTotalMb.ToString("F0", Invariant)} MiB"),
-                ("Disco", disk, $"{usage.DiskUsedGb.ToString("F1", Invariant)} / {usage.DiskTotalGb.ToString("F1", Invariant)} GiB"),
+                ("RAM", ram, $"{MiShell.Core.ByteFormat.FromMegabytes(usage.RamUsedMb)} / {MiShell.Core.ByteFormat.FromMegabytes(usage.RamTotalMb)}"),
+                ("Disco", disk, $"{MiShell.Core.ByteFormat.Human((long)(usage.DiskUsedGb * 1073741824))} / {MiShell.Core.ByteFormat.Human((long)(usage.DiskTotalGb * 1073741824))}"),
             })
             {
                 _writer.WriteLine($"{name,-6} {Format(BuildMiniBar(ratio, 24), RatioConsoleColor(ratio))} {(int)Math.Clamp(ratio * 100, 0, 100),3}%  {detail}");
@@ -87,7 +93,7 @@ public sealed partial class SpectreRenderer
         _ = grid.AddRow(new Markup("RAM"), new Markup(BuildRatioBar(ram)));
         _ = grid.AddRow(new Markup("Disco"), new Markup(BuildRatioBar(disk)));
         _ = grid.AddRow(
-            new Markup($"{usage.RamUsedMb.ToString("F0", Invariant)} / {usage.RamTotalMb.ToString("F0", Invariant)} MiB · {usage.DiskUsedGb.ToString("F1", Invariant)} / {usage.DiskTotalGb.ToString("F1", Invariant)} GiB"),
+            new Markup($"{MiShell.Core.ByteFormat.FromMegabytes(usage.RamUsedMb)} / {MiShell.Core.ByteFormat.FromMegabytes(usage.RamTotalMb)} · {MiShell.Core.ByteFormat.Human((long)(usage.DiskUsedGb * 1073741824))} / {MiShell.Core.ByteFormat.Human((long)(usage.DiskTotalGb * 1073741824))}"),
             new Text(string.Empty));
 
         _console.Write(new Panel(grid)

@@ -52,7 +52,10 @@ services.AddSingleton<IBuiltinCommand>(sp => new ListDirectoryCommand(
     sp.GetRequiredService<IOutputRenderer>(), "ls"));
 services.AddSingleton<IBuiltinCommand>(sp => new ListDirectoryCommand(
     sp.GetRequiredService<IOutputRenderer>(), "dir"));
-services.AddSingleton<IBuiltinCommand, MakeDirectoryCommand>();
+services.AddSingleton<IBuiltinCommand>(sp => new MakeDirectoryCommand(sp.GetRequiredService<IOutputRenderer>(), "mkdir"));
+services.AddSingleton<IBuiltinCommand>(sp => new MakeDirectoryCommand(sp.GetRequiredService<IOutputRenderer>(), "md"));
+foreach (var removeName in new[] { "rm", "del", "erase", "rmdir", "rd" })
+    services.AddSingleton<IBuiltinCommand>(sp => new RemoveCommand(sp.GetRequiredService<IOutputRenderer>(), removeName));
 services.AddSingleton<IBuiltinCommand>(sp => new ReadFileCommand(
     sp.GetRequiredService<IOutputRenderer>(), "type"));
 services.AddSingleton<IBuiltinCommand>(sp => new ReadFileCommand(
@@ -79,6 +82,9 @@ services.AddSingleton<IBuiltinCommand, UnsetCommand>();
 services.AddSingleton<IBuiltinCommand, FormatCommand>();
 services.AddSingleton<IBuiltinCommand, TopCommand>();
 services.AddSingleton<IBuiltinCommand, TraceCommand>();
+services.AddSingleton<IBuiltinCommand>(sp => new StartCommand(sp.GetRequiredService<IOutputRenderer>(), sp));
+services.AddSingleton<IBuiltinCommand>(sp => new SuspendResumeCommand(sp.GetRequiredService<IOutputRenderer>(), suspend: true));
+services.AddSingleton<IBuiltinCommand>(sp => new SuspendResumeCommand(sp.GetRequiredService<IOutputRenderer>(), suspend: false));
 
 // UI interactiva
 services.AddSingleton(sp => new CompletionProvider(

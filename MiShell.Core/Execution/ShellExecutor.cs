@@ -74,15 +74,47 @@ public sealed class ShellExecutor(
 
         var originalInput = Console.In;
         using var reader = input is null ? null : new StreamReader(Path.GetFullPath(input.Path, state.WorkingDirectory));
-        // Un fallo al abrir stdin no debe truncar stdout.
-        await using var writer = output is null ? null : new StreamWriter(OpenOutput(output));
-        using var redirect = writer is null ? null : renderer.RedirectOutput(writer);
+        var target = output is null ? null : Describe(output);
+        int code;
         try
         {
-            if (reader is not null) Console.SetIn(reader);
-            return (await builtin.ExecuteAsync([.. first.Arguments], state, cancellationToken).ConfigureAwait(false)).ExitCode;
+            // Un fallo al abrir stdin no debe truncar stdout.
+            await using (var writer = output is null ? null : new StreamWriter(OpenOutput(output)))
+            {
+                using var redirect = writer is null ? null : renderer.RedirectOutput(writer);
+                if (reader is not null) Console.SetIn(reader);
+                code = (await builtin.ExecuteAsync([.. first.Arguments], state, cancellationToken).ConfigureAwait(false)).ExitCode;
+            }
         }
         finally { Console.SetIn(originalInput); }
+
+        // El archivo ya está cerrado y la salida vuelve a la consola: ahora se puede informar.
+        if (target is not null) Report(target);
+        return code;
+    }
+
+    /// <summary>Estado de un archivo de salida antes de escribirlo, para informar después si se creó, reemplazó o amplió.</summary>
+    private sealed record OutputTarget(string Label, string FullPath, bool Append, bool Existed, long SizeBefore);
+
+    private OutputTarget Describe(Redirection output)
+    {
+        var path = Path.GetFullPath(output.Path, state.WorkingDirectory);
+        var info = new FileInfo(path);
+        return new OutputTarget(output.Path, path, output.Kind == RedirectionKind.OutputAppend, info.Exists, info.Exists ? info.Length : 0);
+    }
+
+    /// <summary>Informa en la consola el resultado de una redirección: creado, reemplazado o añadido, con los tamaños.</summary>
+    private void Report(OutputTarget target)
+    {
+        var info = new FileInfo(target.FullPath);
+        if (!info.Exists) return;
+        var size = ByteFormat.Human(info.Length);
+        renderer.WriteSuccess(target switch
+        {
+            { Existed: false } => $"Creado {target.Label} ({size})",
+            { Append: true } => $"Añadido a {target.Label} (+{ByteFormat.Human(Math.Max(0, info.Length - target.SizeBefore))}, total {size})",
+            _ => $"Reemplazado {target.Label} ({size})",
+        });
     }
 
     /// <summary>
@@ -151,6 +183,8 @@ public sealed class ShellExecutor(
 
         var pipeline = new ExternalPipeline(commands.Count, background, Trace, cancellationToken);
         var transferred = false;
+        var targets = new List<OutputTarget>();
+        int code;
         try
         {
             for (var i = 0; i < commands.Count; i++)
@@ -168,7 +202,9 @@ public sealed class ShellExecutor(
             for (var i = 0; i < commands.Count; i++)
             {
                 var output = commands[i].Redirections.FirstOrDefault(r => r.Kind != RedirectionKind.Input);
-                if (output is not null) pipeline.SetOutput(i, OpenOutput(output));
+                if (output is null) continue;
+                targets.Add(Describe(output));
+                pipeline.SetOutput(i, OpenOutput(output));
             }
 
             pipeline.Start(commands, executables, state.WorkingDirectory, background);
@@ -183,12 +219,15 @@ public sealed class ShellExecutor(
             }
 
             // Los procesos heredan la consola: un spinner competiría con su salida.
-            return await completion.ConfigureAwait(false);
+            code = await completion.ConfigureAwait(false);
         }
         finally
         {
             if (!transferred) await pipeline.DisposeAsync().ConfigureAwait(false);
         }
+
+        foreach (var target in targets) Report(target);
+        return code;
     }
 
     /// <summary>Muestra un mensaje de seguimiento en stderr cuando <c>trace on</c> está activo.</summary>
@@ -202,9 +241,25 @@ public sealed class ShellExecutor(
     {
         var path = Path.GetFullPath(output.Path, state.WorkingDirectory);
         var mode = output.Kind == RedirectionKind.OutputAppend ? FileMode.Append : FileMode.Create;
+        try
+        {
 #pragma warning disable CA2000 // El llamador recibe la propiedad del flujo y lo libera.
-        return outputFactory?.Invoke(path, mode) ?? new FileStream(path, mode, FileAccess.Write);
+            return outputFactory?.Invoke(path, mode) ?? new FileStream(path, mode, FileAccess.Write);
 #pragma warning restore CA2000
+        }
+        catch (DirectoryNotFoundException)
+        {
+            var folder = Path.GetDirectoryName(output.Path);
+            throw new RedirectionException($"No se pudo escribir '{output.Path}': la carpeta '{(string.IsNullOrEmpty(folder) ? Path.GetDirectoryName(path) : folder)}' no existe.");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw new RedirectionException($"No se pudo escribir '{output.Path}': sin permisos o es una carpeta.");
+        }
+        catch (IOException ex)
+        {
+            throw new RedirectionException($"No se pudo escribir '{output.Path}': {ex.Message}", ex);
+        }
     }
 
     /// <summary>

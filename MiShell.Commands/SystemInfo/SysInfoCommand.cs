@@ -28,8 +28,6 @@ public sealed class SysInfoCommand(
             var diskTotalGb = drive.TotalSize / bytesPerGb;
             var diskUsedGb = (drive.TotalSize - drive.AvailableFreeSpace) / bytesPerGb;
             renderer.RenderSystemInfo(new SystemUsage(cpuPercent, ramTotalMb - ramAvailableMb, ramTotalMb, diskUsedGb, diskTotalGb));
-            renderer.WriteInfo($"CPU: {cpuPercent:F1}%; RAM libre: {ramAvailableMb:F0} MiB; disco libre: {diskTotalGb - diskUsedGb:F1} GiB.");
-            renderer.WriteInfo($"Disco consultado: {Path.GetPathRoot(context.WorkingDirectory)}. CPU es una muestra de 300 ms; RAM y disco son instantáneas.");
             if (cpuSampler is null && !Console.IsOutputRedirected) await RenderCoresAsync(cancellationToken).ConfigureAwait(false);
             RenderDetails();
             return CommandResult.Ok;
@@ -118,10 +116,10 @@ public sealed class SysInfoCommand(
                 {
                     rows.Add(["Compilación de Windows", $"{item["BuildNumber"]}"]);
                     var boot = System.Management.ManagementDateTimeConverter.ToDateTime($"{item["LastBootUpTime"]}");
-                    rows.Add(["Último arranque", boot.ToString("yyyy-MM-dd HH:mm", inv)]);
+                    rows.Add(["Último arranque", MiShell.Core.ClockFormat.DateAndTime(boot)]);
                     var total = Convert.ToDouble(item["TotalVirtualMemorySize"], inv) / 1024.0;
                     var free = Convert.ToDouble(item["FreeVirtualMemory"], inv) / 1024.0;
-                    rows.Add(["Memoria virtual (MiB)", $"{total - free:F0} usados de {total:F0}"]);
+                    rows.Add(["Memoria virtual", $"{MiShell.Core.ByteFormat.FromMegabytes(total - free)} usados de {MiShell.Core.ByteFormat.FromMegabytes(total)}"]);
                     break;
                 }
             }
@@ -146,15 +144,15 @@ public sealed class SysInfoCommand(
             try
             {
                 if (!drive.IsReady) continue;
-                var total = drive.TotalSize / 1073741824.0;
-                var free = drive.AvailableFreeSpace / 1073741824.0;
-                drives.Add([drive.Name, drive.DriveType.ToString(), drive.DriveFormat, $"{total:F1}", $"{free:F1}",
-                    total > 0 ? UsageCell((total - free) / total) : "-", drive.VolumeLabel]);
+                var total = drive.TotalSize;
+                var free = drive.AvailableFreeSpace;
+                drives.Add([drive.Name, drive.DriveType.ToString(), drive.DriveFormat, MiShell.Core.ByteFormat.Human(total), MiShell.Core.ByteFormat.Human(free),
+                    total > 0 ? UsageCell((double)(total - free) / total) : "-", drive.VolumeLabel]);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         }
 
-        renderer.RenderTable("Unidades", ["Unidad", "Tipo", "Formato", "Total (GiB)", "Libre (GiB)", "Uso", "Etiqueta"], drives,
+        renderer.RenderTable("Unidades", ["Unidad", "Tipo", "Formato", "Total", "Libre", "Uso", "Etiqueta"], drives,
             cellColor: (row, column) => column == 5 ? UsageColor(row[5]) : null);
     }
 

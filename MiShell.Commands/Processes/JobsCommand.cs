@@ -16,7 +16,7 @@ public sealed class JobsCommand(IOutputRenderer renderer) : IBuiltinCommand
         var jobs = context.Jobs.Jobs;
         if (jobs.Count == 0)
         {
-            renderer.WriteInfo("No hay trabajos en segundo plano.");
+            renderer.WriteInfo("No hay trabajos en segundo plano. Lanza uno con: start <programa> (o termina la línea con &).");
             return Task.FromResult(CommandResult.Ok);
         }
 
@@ -30,11 +30,11 @@ public sealed class JobsCommand(IOutputRenderer renderer) : IBuiltinCommand
                 j.Status,
                 j.Detail,
                 MiShell.Core.ClockFormat.HourWithSeconds(j.StartedAt),
-                $"{(DateTime.Now - j.StartedAt).TotalSeconds:F0} s",
+                MiShell.Core.ByteFormat.Duration(DateTime.Now - j.StartedAt),
                 j.CommandLine,
             ]),
             cellColor: (row, column) => column == 2
-                ? row[2] switch { "corriendo" => renderer.Theme.Info, "terminado" => renderer.Theme.Success, _ => renderer.Theme.ErrorColor }
+                ? row[2] switch { "corriendo" => renderer.Theme.Info, "suspendido" => renderer.Theme.Accent, "terminado" => renderer.Theme.Success, _ => renderer.Theme.ErrorColor }
                 : column == 0 ? renderer.Theme.Muted : null);
 
         return Task.FromResult(CommandResult.Ok);

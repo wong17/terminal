@@ -14,9 +14,9 @@ public sealed class ListDirectoryCommand(IOutputRenderer renderer, string name) 
 
     public string Description => "Lista archivos: atributos, fecha, tamaño, nombre y totales.";
 
-    public string Usage => $"{Name} [-l] [-a] [-h] [-R] [-t|-S] [-r] [ruta|patrón...]";
+    public string Usage => $"{Name} [-l] [-a] [-b] [-R] [-t|-S] [-r] [ruta|patrón...]";
 
-    private sealed record Options(bool Long, bool All, bool Human, bool Recurse, bool ByTime, bool BySize, bool Reverse);
+    private sealed record Options(bool Long, bool All, bool Bytes, bool Recurse, bool ByTime, bool BySize, bool Reverse);
 
     /// <inheritdoc />
     public Task<CommandResult> ExecuteAsync(string[] arguments, ICommandContext context, CancellationToken cancellationToken)
@@ -50,7 +50,7 @@ public sealed class ListDirectoryCommand(IOutputRenderer renderer, string name) 
 
         if (!failed || totalFiles + totalDirs > 0)
         {
-            var summary = $"{totalFiles} archivos ({totalBytes.ToString("N0", CultureInfo.InvariantCulture)} bytes) · {totalDirs} directorios";
+            var summary = $"{totalFiles} archivos ({(opts.Bytes ? MiShell.Core.ByteFormat.Exact(totalBytes) : FileFormat.Human(totalBytes))}) · {totalDirs} directorios";
             try
             {
                 var root = Path.GetPathRoot(Path.GetFullPath(targets[0] is "." ? context.WorkingDirectory : targets[0], context.WorkingDirectory));
@@ -65,7 +65,7 @@ public sealed class ListDirectoryCommand(IOutputRenderer renderer, string name) 
 
     private static (Options? Options, List<string> Targets) Parse(string[] arguments)
     {
-        bool l = false, a = false, h = false, r = false, t = false, s = false, rev = false;
+        bool l = false, a = false, b = false, r = false, t = false, s = false, rev = false;
         var targets = new List<string>();
         foreach (var argument in arguments)
         {
@@ -74,7 +74,7 @@ public sealed class ListDirectoryCommand(IOutputRenderer renderer, string name) 
                 var flags = argument.StartsWith("--", StringComparison.Ordinal)
                     ? argument switch
                     {
-                        "--long" => "l", "--all" => "a", "--human" => "h", "--recurse" => "R", "--reverse" => "r",
+                        "--long" => "l", "--all" => "a", "--human" => "h", "--bytes" => "b", "--recurse" => "R", "--reverse" => "r",
                         _ => "?",
                     }
                     : argument[1..];
@@ -84,7 +84,8 @@ public sealed class ListDirectoryCommand(IOutputRenderer renderer, string name) 
                     {
                         case 'l': l = true; break;
                         case 'a': a = true; break;
-                        case 'h': h = true; break;
+                        case 'h': break; // el tamaño ya es legible; se acepta por compatibilidad
+                        case 'b': b = true; break;
                         case 'R': r = true; break;
                         case 't': t = true; break;
                         case 'S': s = true; break;
@@ -96,7 +97,7 @@ public sealed class ListDirectoryCommand(IOutputRenderer renderer, string name) 
             else targets.Add(argument);
         }
 
-        return (new Options(l, a, h, r, t, s, rev), targets);
+        return (new Options(l, a, b, r, t, s, rev), targets);
     }
 
     /// <summary>Separa la ruta del patrón con comodines (*.txt) o detecta un archivo individual.</summary>
@@ -125,7 +126,7 @@ public sealed class ListDirectoryCommand(IOutputRenderer renderer, string name) 
             var isDir = entry is DirectoryInfo;
             var length = entry is FileInfo f ? f.Length : 0;
             if (isDir) dirs++; else { files++; bytes += length; }
-            var size = isDir ? string.Empty : opts.Human ? FileFormat.Human(length) : length.ToString(CultureInfo.InvariantCulture);
+            var size = isDir ? string.Empty : opts.Bytes ? MiShell.Core.ByteFormat.Exact(length) : FileFormat.Human(length);
             var label = entry.Name;
             if (entry.LinkTarget is { } link) label += " -> " + link;
             rows.Add(opts.Long

@@ -59,11 +59,11 @@ public interface IOutputRenderer
     /// <summary>Muestra el banner de bienvenida del shell.</summary>
     void RenderBanner();
 
-    /// <summary>Tabla de procesos: PID, nombre, CPU y RAM con barra proporcional.</summary>
-    void RenderProcessTable(IEnumerable<ProcessInfo> processes);
+    /// <summary>Tabla de procesos: PID, nombre, estado, CPU y memoria con barra proporcional; <paramref name="detailed"/> añade handles, sesión y memoria privada.</summary>
+    void RenderProcessTable(IEnumerable<ProcessInfo> processes, bool detailed = false);
 
-    /// <summary>Gráfico de barras (RAM por proceso, uso de recursos...).</summary>
-    void RenderBarChart(string title, IEnumerable<(string Label, double Value, string ColorHint)> items, string valueSuffix);
+    /// <summary>Gráfico de barras (RAM por proceso, uso de recursos...); <paramref name="format"/> escribe cada valor con su unidad.</summary>
+    void RenderBarChart(string title, IEnumerable<(string Label, double Value, string ColorHint)> items, string valueSuffix, Func<double, string>? format = null);
 
     /// <summary>Panel tipo neofetch con barras de uso de CPU/RAM/disco.</summary>
     void RenderSystemInfo(SystemUsage usage);
@@ -104,8 +104,12 @@ public interface IOutputRenderer
 /// <param name="SessionId">Sesión de Windows (columna SI).</param>
 /// <param name="PrivateMb">Memoria privada en MB (columna PM).</param>
 /// <param name="StartTime">Momento de inicio, si se puede leer.</param>
+/// <param name="State">Ejecutando, En espera, Suspendido o <c>-</c> si no se puede leer.</param>
+/// <param name="RamPercent">Porcentaje de la memoria física total que ocupa.</param>
+/// <remarks>Un <paramref name="CpuSeconds"/> negativo significa que el sistema no permitió leerlo; <paramref name="Pid"/> 0 indica un grupo de procesos del mismo programa.</remarks>
 public sealed record ProcessInfo(int Pid, string Name, double CpuSeconds, double WorkingSetMb,
-    int Handles = 0, int Threads = 0, int SessionId = 0, double PrivateMb = 0, DateTime? StartTime = null);
+    int Handles = 0, int Threads = 0, int SessionId = 0, double PrivateMb = 0, DateTime? StartTime = null,
+    string State = "-", double RamPercent = 0);
 
 /// <summary>Uso global de recursos del sistema.</summary>
 /// <param name="CpuPercent">0–100.</param>

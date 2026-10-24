@@ -92,6 +92,12 @@ public sealed class Shell(
                 lastExitCode = 1;
                 lastDuration = null;
             }
+            catch (RedirectionException ex)
+            {
+                renderer.WriteError(ex.Message);
+                lastExitCode = 1;
+                lastDuration = null;
+            }
             catch (CommandNotFoundException ex)
             {
                 renderer.WriteError(ex.Message);

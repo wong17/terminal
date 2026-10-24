@@ -19,11 +19,14 @@ public sealed class BackgroundJob(int jobId, IReadOnlyList<Process> processes, s
     public Task<int> Completion { get; } = completion;
     /// <summary>True cuando la tubería ya terminó (con éxito, con fallo o cancelada).</summary>
     public bool HasExited => Completion.IsCompleted;
-    /// <summary>corriendo, terminado o fallido.</summary>
-    public string Status => !HasExited ? "corriendo" : Killed || Completion.IsCompletedSuccessfully && Completion.Result == 0 ? "terminado" : "fallido";
+    /// <summary>corriendo, suspendido, terminado o fallido.</summary>
+    public string Status => !HasExited ? (Suspended ? "suspendido" : "corriendo") : Killed || Completion.IsCompletedSuccessfully && Completion.Result == 0 ? "terminado" : "fallido";
     /// <summary>Código de salida o causa del fallo para mostrar en jobs.</summary>
     public string Detail => Killed ? "terminado con kill" : Completion.IsFaulted ? Completion.Exception!.GetBaseException().Message
-        : Completion.IsCanceled ? "cancelado" : Completion.IsCompletedSuccessfully ? $"código {Completion.Result}" : "en ejecución";
+        : Completion.IsCanceled ? "cancelado" : Completion.IsCompletedSuccessfully ? $"código {Completion.Result}" : Suspended ? "en pausa" : "en ejecución";
+
+    /// <summary>True mientras el usuario lo tiene pausado con <c>suspend</c>.</summary>
+    public bool Suspended { get; set; }
 
     /// <summary>True si el usuario lo terminó con <c>kill</c>; en ese caso no se avisa de un fallo al finalizar.</summary>
     public bool Killed { get; set; }

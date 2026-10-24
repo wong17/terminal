@@ -21,7 +21,7 @@ public sealed class TimeCommand(IOutputRenderer renderer) : IBuiltinCommand
         renderer.WriteLine(now.ToString("dddd, dd 'de' MMMM 'de' yyyy, ", culture) + MiShell.Core.ClockFormat.HourWithSeconds(now.DateTime), renderer.Theme.Accent);
         renderer.RenderList("Fecha y hora",
         [
-            ("Fecha", now.ToString("yyyy-MM-dd", inv)),
+            ("Fecha", MiShell.Core.ClockFormat.Date(now.DateTime)),
             ("Hora local", $"{MiShell.Core.ClockFormat.HourWithSeconds(now.DateTime)}  ({now.ToString("HH:mm:ss.fff", inv)})"),
             ("Zona horaria", $"{TimeZoneInfo.Local.StandardName} (UTC{(now.Offset < TimeSpan.Zero ? "-" : "+")}{now.Offset:hh\\:mm})"),
             ("UTC", now.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss", inv)),

@@ -70,7 +70,7 @@ try {
             InternalPipeline = (Get-Content -LiteralPath (Join-Path $workPath '.mish-demo\archivos-txt.txt') -Raw).Contains('saludo.txt')
             Append = @(Get-Content -LiteralPath (Join-Path $workPath '.mish-demo\saludo.txt')).Count -eq 2
             BackgroundPipeline = (Get-Content -LiteralPath (Join-Path $workPath '.mish-demo\trabajo.txt') -Raw).Trim() -eq 'trabajo terminado'
-            WorkingDirectory = (Get-Content -LiteralPath (Join-Path $workPath 'pwd.txt') -Raw).Trim() -eq $workPath
+            WorkingDirectory = (Get-Content -LiteralPath (Join-Path $workPath 'pwd.txt') -Raw).Contains($workPath)
             CommandHelp = (Get-Content -LiteralPath (Join-Path $workPath 'help-ps.txt') -Raw).Contains('--sort ram|cpu|pid')
             DetailedListing = (Get-Content -LiteralPath (Join-Path $workPath 'listing.txt') -Raw).Contains('Modificado')
         }

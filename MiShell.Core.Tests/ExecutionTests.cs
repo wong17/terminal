@@ -53,7 +53,8 @@ public sealed class ExecutionTests
         Assert.Equal(0, await f.Run("echo first > output.txt"));
         Assert.Equal(0, await f.Run("echo second >> output.txt"));
         Assert.Equal($"first{System.Environment.NewLine}second{System.Environment.NewLine}", await File.ReadAllTextAsync(f.FilePath("output.txt")));
-        Assert.Equal("", f.Output.ToString());
+        Assert.Contains("Creado output.txt", f.Output.ToString());
+        Assert.Contains("Añadido a output.txt", f.Output.ToString());
     }
 
     [Fact]
@@ -65,7 +66,8 @@ public sealed class ExecutionTests
         var content = await File.ReadAllTextAsync(f.FilePath("listing.txt"));
         Assert.Contains("[literal].txt", content);
         Assert.DoesNotContain('\u001b', content);
-        Assert.Equal("", f.Output.ToString());
+        Assert.Contains("Creado listing.txt", f.Output.ToString());
+        Assert.DoesNotContain("[literal].txt", f.Output.ToString());
     }
 
     [Fact]
@@ -241,7 +243,7 @@ public sealed class ExecutionTests
         Assert.Equal(0, await f.Run("ls -l > listing.txt"));
         var output = await File.ReadAllTextAsync(f.FilePath("listing.txt"));
         Assert.Contains("Tamaño", output);
-        Assert.Matches(@"-a----\t\d{4}-\d\d-\d\d \d\d:\d\d\t\d{4}-\d\d-\d\d \d\d:\d\d\t\d{4}-\d\d-\d\d \d\d:\d\d\t3\tsample\.txt", output);
+        Assert.Matches(@"-a----\t\d\d/\d\d/\d{4} \d\d:\d\d [AP]M\t\d\d/\d\d/\d{4} \d\d:\d\d [AP]M\t\d\d/\d\d/\d{4} \d\d:\d\d [AP]M\t3 B\tsample\.txt", output);
         Assert.Contains("Modificado", output);
     }
 

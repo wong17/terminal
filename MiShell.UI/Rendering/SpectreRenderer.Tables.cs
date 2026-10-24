@@ -13,7 +13,7 @@ public sealed partial class SpectreRenderer
     private const int ColumnGutter = 2;
     private const int MinColumnWidth = 8;
 
-    [GeneratedRegex(@"^-?[\d.,]+( ?(B|KiB|MiB|GiB|TiB|%|s|MHz))?$")]
+    [GeneratedRegex(@"^-?[\d.,:]+( ?(B|KB|MB|GB|TB|KiB|MiB|GiB|TiB|%|s|MHz|d))?$")]
     private static partial Regex NumericCell();
 
     /// <inheritdoc />
@@ -58,17 +58,27 @@ public sealed partial class SpectreRenderer
     }
 
     /// <inheritdoc />
-    public void RenderProcessTable(IEnumerable<ProcessInfo> processes)
+    public void RenderProcessTable(IEnumerable<ProcessInfo> processes, bool detailed = false)
     {
         var theme = themeManager.Current;
         var infos = processes.ToList();
-        if (infos.Count == 0) { WriteInfo("No hay procesos accesibles que coincidan."); return; }
+        if (infos.Count == 0) { WriteInfo("No hay procesos que coincidan."); return; }
         var maxRam = Math.Max(1, infos.Max(p => p.WorkingSetMb));
-        string[] columns = ["PID", "Nombre", "Hilos", "Handles", "SI", "CPU (s)", "PM (MiB)", "RAM (MiB)", "Inicio"];
-        var rows = infos.Select(p => (string[])[
-            p.Pid.ToString(Invariant), p.Name, p.Threads.ToString(Invariant), p.Handles.ToString(Invariant),
-            p.SessionId.ToString(Invariant), p.CpuSeconds.ToString("F1", Invariant), p.PrivateMb.ToString("F0", Invariant),
-            p.WorkingSetMb.ToString("F0", Invariant), p.StartTime?.ToString("MM-dd HH:mm", Invariant) ?? "-"]).ToList();
+        string[] columns = detailed
+            ? ["PID", "Nombre", "Estado", "Hilos", "Handles", "Sesión", "CPU", "Mem. privada", "Memoria", "% RAM", "Inicio"]
+            : ["PID", "Nombre", "Estado", "Hilos", "CPU", "Memoria", "% RAM", "Inicio"];
+        var rows = infos.Select(p =>
+        {
+            var cpu = p.CpuSeconds < 0 ? "-" : MiShell.Core.ByteFormat.Duration(TimeSpan.FromSeconds(p.CpuSeconds));
+            var start = p.StartTime is { } s ? MiShell.Core.ClockFormat.Moment(s) : "-";
+            var ram = MiShell.Core.ByteFormat.FromMegabytes(p.WorkingSetMb);
+            var percent = p.RamPercent.ToString("F1", Invariant) + "%";
+            var pid = p.Pid == 0 ? "-" : p.Pid.ToString(Invariant);
+            return detailed
+                ? (string[])[pid, p.Name, p.State, p.Threads.ToString(Invariant), p.Handles.ToString(Invariant), p.SessionId.ToString(Invariant),
+                    cpu, MiShell.Core.ByteFormat.FromMegabytes(p.PrivateMb), ram, percent, start]
+                : [pid, p.Name, p.State, p.Threads.ToString(Invariant), cpu, ram, percent, start];
+        }).ToList();
         if (IsPlain)
         {
             RenderTable("Procesos", columns, rows);
@@ -76,20 +86,25 @@ public sealed partial class SpectreRenderer
         }
 
         // La barra de memoria es una columna más; lleva el color del tema.
-        columns = [.. columns, "Memoria"];
+        columns = [.. columns, "Barra"];
         for (var i = 0; i < rows.Count; i++)
             rows[i] = [.. rows[i], Format(BuildMiniBar(infos[i].WorkingSetMb / maxRam, 10), theme.Accent)];
 
-        // PID y sesión atenuados, nombre destacado; la RAM se resalta desde 500 MiB y alerta desde 1 GiB.
-        ConsoleColor? Paint(string[] row, int column) => column switch
+        var state = Array.IndexOf(columns, "Estado");
+        var memory = Array.IndexOf(columns, "Memoria");
+
+        // PID atenuado, nombre destacado, estado con color; la memoria se resalta desde 500 MB y alerta desde 1 GB.
+        ConsoleColor? Paint(string[] row, int column)
         {
-            0 or 4 => theme.Muted,
-            1 => theme.Command,
-            7 => double.TryParse(row[7], System.Globalization.NumberStyles.Float, Invariant, out var ram)
-                ? ram >= 1024 ? theme.ErrorColor : ram >= 500 ? theme.Info : null
-                : null,
-            _ => null,
-        };
+            if (column == 0) return theme.Muted;
+            if (column == 1) return theme.Command;
+            if (column == state)
+                return row[state] switch { MiShell.Core.Jobs.ProcessStateReader.Running => theme.Success, MiShell.Core.Jobs.ProcessStateReader.Suspended => theme.Info, "-" => theme.Muted, _ => theme.Muted };
+            if (column != memory) return null;
+            var mb = infos[rows.IndexOf(row)].WorkingSetMb;
+            return mb >= 1024 ? theme.ErrorColor : mb >= 500 ? theme.Info : null;
+        }
+
         RenderTable("Procesos", columns, rows, cellColor: Paint);
     }
 
@@ -151,7 +166,7 @@ public sealed partial class SpectreRenderer
     /// <summary>Una columna se alinea a la derecha si todas sus celdas con contenido son números (con unidad opcional).</summary>
     private static bool IsNumericColumn(IReadOnlyList<string[]> rows, int column)
     {
-        var cells = rows.Select(r => r[column]).Where(c => c.Length > 0).ToList();
+        var cells = rows.Select(r => r[column]).Where(c => c.Length > 0 && c != "-").ToList();
         return cells.Count > 0 && cells.All(c => NumericCell().IsMatch(c));
     }
 
