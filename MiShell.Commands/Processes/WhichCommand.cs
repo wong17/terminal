@@ -10,7 +10,7 @@ public sealed class WhichCommand(IOutputRenderer renderer, IExecutableResolver r
 
     public string Name => "which";
 
-    public string Description => "Muestra tipo, versión y ruta de un comando; -a lista todas las coincidencias del PATH.";
+    public string Description => "Muestra tipo, versión y ruta de un comando (-a: todas las coincidencias).";
 
     public string Usage => "which [-a] <comando>...";
 

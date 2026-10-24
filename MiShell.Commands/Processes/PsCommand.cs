@@ -100,7 +100,7 @@ public sealed class PsCommand(IOutputRenderer renderer) : IBuiltinCommand
                     : sort == "ram" ? $"Memoria: {shown.Count} procesos con más RAM" : $"Memoria de {shown.Count} procesos (orden: {sort})";
                 renderer.RenderBarChart(title,
                     shown.Select(p => (group ? p.Name : $"{p.Name} ({p.Pid})", Math.Round(p.WorkingSetMb, 1),
-                        p.WorkingSetMb >= 1024 ? "red" : p.WorkingSetMb >= 500 ? "yellow" : "cyan")),
+                        group ? "cyan" : p.WorkingSetMb >= 1024 ? "red" : p.WorkingSetMb >= 500 ? "yellow" : "cyan")),
                     unit, ByteFormat.FromMegabytes);
             }
             else renderer.RenderProcessTable(shown, detailed);
@@ -108,7 +108,7 @@ public sealed class PsCommand(IOutputRenderer renderer) : IBuiltinCommand
             var restricted = shown.Count(p => p.CpuSeconds < 0);
             renderer.WriteLine($"{shown.Count} de {items.Count} {(group ? "programas" : "procesos")} · orden: {(sort == "ram" ? "memoria" : sort == "cpu" ? "CPU" : "PID")}", renderer.Theme.Muted);
             if (restricted > 0)
-                renderer.WriteLine($"{restricted} de ellos son procesos protegidos del sistema (CPU e inicio no legibles); ejecuta MiShell como administrador para verlos.", renderer.Theme.Muted);
+                renderer.WriteLine($"{restricted} protegidos del sistema sin CPU ni inicio legibles; ejecuta como administrador para verlos.", renderer.Theme.Muted);
             return Task.FromResult(CommandResult.Ok);
         }
         finally

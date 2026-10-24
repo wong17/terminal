@@ -201,7 +201,14 @@ public sealed class TopCommand(IOutputRenderer renderer) : IBuiltinCommand
         catch (IOException) { width = 100; height = 30; }
         var lines = pid is { } one ? BuildProcessFrame(one, snapshot, view, width, height) : BuildFrame(snapshot, view, width, count ?? int.MaxValue, height);
         var frame = new StringBuilder("\e[H");
-        foreach (var line in lines.Take(height)) frame.Append(Clip(line, width - 1)).Append("\e[K\n");
+        var visible = lines.Take(height).ToList();
+        for (var i = 0; i < visible.Count; i++)
+        {
+            // La última línea no lleva salto: en una ventana llena haría desplazar la pantalla.
+            frame.Append(Clip(visible[i], width - 1)).Append("\e[K");
+            if (i < visible.Count - 1) frame.Append('\n');
+        }
+
         frame.Append("\e[J");
         Console.Write(frame);
     }
@@ -323,7 +330,7 @@ public sealed class TopCommand(IOutputRenderer renderer) : IBuiltinCommand
         if (height > 0)
         {
             while (lines.Count < height - 1) lines.Add(string.Empty);
-            lines.Add(Paint($"  ↑ ↓ PgUp PgDn desplazar · ordenar: c CPU · m memoria · p PID · n nombre · e estado   (orden actual: {view.Sort}, desde la fila {view.Offset + 1})", theme.Muted));
+            lines.Add(Paint($"  ↑ ↓ PgUp PgDn desplazar · ordenar: c CPU · m memoria · p PID · n nombre · e estado   orden: {view.Sort}", theme.Muted));
         }
 
         return lines;

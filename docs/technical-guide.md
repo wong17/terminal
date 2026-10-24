@@ -52,7 +52,9 @@ En `cmd /c echo Hola | findstr Hola`, MiShell copia bytes de stdout de la primer
 
 `<` abre entrada; `>` abre/trunca salida y `>>` añade. Las entradas se abren antes de truncar salidas: una entrada faltante no borra una salida existente. La redirección explícita sustituye ese extremo del pipe.
 
-Los internos corren dentro de MiShell. Un scope del renderer cambia su salida, incluidas tablas, hacia el archivo. `cat`/`type` leen stdin; los demás rechazan `<`. Los internos no participan en pipes ni en `&`.
+Los internos corren dentro de MiShell. Un scope del renderer cambia su salida, incluidas tablas, hacia el archivo. `cat`/`type` leen stdin; los demás rechazan `<`. Un interno solo puede abrir una tubería y no admite `&`.
+
+Al terminar una redirección, MiShell cierra el archivo, devuelve la salida a la consola e informa el resultado (`Creado`, `Reemplazado` o `Añadido`, con el tamaño). Si el archivo no puede abrirse (carpeta inexistente, sin permisos, en uso), `RedirectionException` explica la causa sin tocar los datos existentes.
 
 Los pipes externos copian bytes sin recodificar. Los archivos y mensajes internos usan UTF-8; la codificación de cada externo depende de ese programa.
 
@@ -62,13 +64,19 @@ El job conserva **todas** las etapas, PID y una tarea que completa procesos y fl
 
 Ctrl+C cancela el comando, solicita terminar sus árboles de procesos y mantiene la sesión. Cada comando recibe otro token. Cancelar `fg` termina el job esperado. Salir cierra los trabajos pendientes y libera handles. [Microsoft: WaitForExitAsync](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexitasync?view=net-10.0).
 
+Los estados de proceso de la teoría se ven en `ps` y `top`: **Ejecutando** (algún hilo corre o espera CPU), **En espera** (todos bloqueados) y **Suspendido** (todos los hilos suspendidos). Windows no entrega ese estado directamente; `ProcessStateReader` lo deduce de `ThreadState` y `WaitReason`. `start` lanza un programa como trabajo (igual que `&`) y `suspend`/`resume` pausan y reanudan un proceso o trabajo con `NtSuspendProcess`/`NtResumeProcess` de ntdll, el equivalente en Windows de SIGSTOP y SIGCONT.
+
+`rm`, `del`, `rmdir` y `rd` comparten una clase. Borrar una carpeta con contenido pide confirmación `[s/N]` salvo con `-f` o `/q`; nunca se eliminan la raíz de una unidad, la carpeta actual ni sus padres, ni carpetas protegidas del sistema.
+
 `Process.Kill(entireProcessTree: true)` solicita terminar descendientes; esperar el proceso padre no demuestra que todos los descendientes posibles terminaron. Las pruebas verifican los procesos rastreados y el caso concreto de cancelación. [Microsoft: Process.Kill](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process.kill?view=net-10.0).
 
 ## Recursos del sistema
 
-- `ps` libera los handles que consulta. RAM es working set en MiB; CPU son segundos acumulados. Filtra por nombre y ordena por RAM, CPU o PID.
+- `ps` libera los handles que consulta. Lista todos los procesos legibles; un dato que Windows no entrega se muestra como `-`. Memoria es el working set con unidad (MB/GB) y CPU es tiempo acumulado `h:mm:ss`. Filtra por nombre y ordena por RAM, CPU o PID.
+- `top` redibuja la pantalla alternativa: barras por núcleo, CPU y RAM con historial, contadores por estado y una tabla que llena la ventana. Windows no informa en qué núcleo corre cada proceso; la columna Núcleos es el tiempo de CPU consumido por segundo (0.8 = casi un núcleo).
+- Todos los tamaños pasan por `ByteFormat` (B, KB, MB, GB, base 1024) y las fechas por `ClockFormat` (`dd/MM/yyyy`, 12 horas con AM/PM).
 - Las barras comparan los valores mostrados; no indican una alarma de falta de memoria.
-- `sysinfo` usa contadores para una muestra de CPU, WMI para RAM y la unidad de la ruta actual para disco. Informa MiB/GiB y espacio libre.
+- `sysinfo` usa contadores para una muestra de CPU, WMI para RAM y la unidad de la ruta actual para disco. Informa tamaños con unidad y espacio libre.
 - Contadores/WMI pueden fallar por disponibilidad o permisos: se comunica el error, sin inventar capacidad.
 
 ## Fuente de la consigna
