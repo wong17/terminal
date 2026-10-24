@@ -10,7 +10,7 @@ Ejecuta comandos internos y programas externos, conecta sus flujos con tuberías
 - **Ciclo interactivo completo:** prompt de tres líneas con hora, ruta y código de salida, historial, autocompletado con Tab y resaltado del comando mientras se escribe.
 - **Procesos reales:** crea, conecta y espera procesos de Windows; `trace on` muestra cada paso (crear, esperar, código de salida). `start`, `suspend`, `resume` y `kill` controlan los trabajos, y `ps` y `top` muestran el estado de cada proceso.
 - **Salida legible:** fechas `dd/MM/yyyy` con hora de 12 horas, tamaños siempre con unidad (B, KB, MB, GB) y mensajes que confirman lo ocurrido (`✓ Creado saludo.txt (11 B)`).
-- **Ayuda con ejemplos:** `help` muestra cada comando con su nombre en Linux y en Windows (`ls`/`dir`, `cat`/`type`, `rm`/`del`), `help <comando>` incluye ejemplos y `help pipes`, `help redirect`, `help jobs` y `help vars` explican los temas.
+- **Ayuda con ejemplos:** `help` agrupa los comandos y marca el nombre en Windows solo donde cambia (`ls`/`dir`, `cat`/`type`, `rm`/`del`), `help <comando>` incluye ejemplos y `help pipes`, `help redirect`, `help jobs` y `help vars` explican los temas.
 - **Sintaxis de shell:** tuberías `|`, redirecciones `>`, `>>`, `<`, operadores `&&` y `||`, segundo plano con `&`, variables y scripts con `source`.
 - **Comandos internos detallados:** `ls`, `ps`, `top`, `sysinfo`, `which`, `cat` y otros entregan al menos la información de sus equivalentes de Windows, con barras y colores por tema.
 - **Código modular:** seis proyectos, un archivo por comando y 127 pruebas automatizadas.

@@ -102,9 +102,9 @@ public sealed class HelpCommand(IOutputRenderer renderer, IServiceProvider servi
         var byName = builtins.ToDictionary(b => b.Name, StringComparer.OrdinalIgnoreCase);
         var listed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var linuxWidth = Math.Max(5, _catalog.Groups.SelectMany(g => g.Rows).Select(r => r.Linux.Length).DefaultIfEmpty(0).Max());
-        var windowsWidth = Math.Max(7, _catalog.Groups.SelectMany(g => g.Rows).Select(r => (r.Windows ?? r.Linux).Length).DefaultIfEmpty(0).Max());
+        var windowsWidth = Math.Max(7, _catalog.Groups.SelectMany(g => g.Rows).Select(r => (r.Windows ?? string.Empty).Length).DefaultIfEmpty(0).Max());
 
-        renderer.Write("  " + "Linux".PadRight(linuxWidth), renderer.Theme.Command);
+        renderer.Write("  " + "Comando".PadRight(linuxWidth), renderer.Theme.Command);
         renderer.Write("  " + "Windows".PadRight(windowsWidth), renderer.Theme.Info);
         renderer.WriteLine("  Qué hace", renderer.Theme.Muted);
         foreach (var group in _catalog.Groups)
@@ -115,7 +115,7 @@ public sealed class HelpCommand(IOutputRenderer renderer, IServiceProvider servi
             foreach (var row in rows)
             {
                 var command = byName.GetValueOrDefault(row.Linux) ?? (row.Windows is null ? null : byName.GetValueOrDefault(row.Windows));
-                WriteRow(row.Linux, row.Windows ?? row.Linux, command?.Description ?? string.Empty, linuxWidth, windowsWidth);
+                WriteRow(row.Linux, row.Windows ?? string.Empty, command?.Description ?? string.Empty, linuxWidth, windowsWidth);
                 listed.UnionWith(row.Names);
             }
         }
@@ -124,11 +124,11 @@ public sealed class HelpCommand(IOutputRenderer renderer, IServiceProvider servi
         if (others.Length > 0)
         {
             renderer.WriteLine("Otros", renderer.Theme.Accent);
-            foreach (var other in others) WriteRow(other.Name, other.Name, other.Description, linuxWidth, windowsWidth);
+            foreach (var other in others) WriteRow(other.Name, string.Empty, other.Description, linuxWidth, windowsWidth);
         }
 
         renderer.WriteLine();
-        renderer.WriteLine($"Mismo nombre en las dos columnas: funciona igual en Linux y en Windows. help <comando> da ejemplos; temas: {TopicList()}.", renderer.Theme.Muted);
+        renderer.WriteLine($"La columna Windows solo aparece cuando el nombre cambia; los demás se llaman igual en Linux y en Windows. help <comando> da ejemplos; temas: {TopicList()}.", renderer.Theme.Muted);
     }
 
     private void WriteRow(string linux, string windows, string description, int linuxWidth, int windowsWidth)

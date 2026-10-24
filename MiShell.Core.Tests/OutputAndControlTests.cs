@@ -152,7 +152,7 @@ public sealed class OutputAndControlTests
         var dir = new ListDirectoryCommand(f.Renderer, "dir");
         var help = new HelpCommand(f.Renderer, new FakeServices(ls, dir));
         var all = (await Run(f, help)).Output;
-        Assert.Contains("Linux", all);
+        Assert.Contains("Comando", all);
         Assert.Contains("Windows", all);
         Assert.Matches(@"ls\s+dir", all);
         var topic = await Run(f, help, "pipes");
