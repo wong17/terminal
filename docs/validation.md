@@ -1,6 +1,6 @@
 # Validación de la versión de octubre
 
-Ejecutada el **8 de octubre de 2026 (America/Guatemala)**. Windows 10, versión 10.0.19045; .NET SDK 10.0.401; runtime 10.0.12.
+Ejecutada el **23 de octubre de 2026 (America/Guatemala)**. Windows 10, versión 10.0.19045; .NET SDK 10.0.402; runtime 10.0.13.
 
 ## Resultado
 
