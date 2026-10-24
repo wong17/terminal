@@ -9,7 +9,7 @@ Ejecutada el **8 de octubre de 2026 (America/Guatemala)**. Windows 10, versión 
 | Build inicial Debug | 0 errores, 0 advertencias |
 | Suite inicial | 14 aprobadas, 0 fallidas |
 | Build completo final Release | 0 errores, 0 advertencias |
-| Suite final Release | **110 aprobadas, 0 fallidas, 0 omitidas** |
+| Suite final Release | **127 aprobadas, 0 fallidas, 0 omitidas** (23 de octubre de 2026) |
 | Demo aislada con `-IncludeSystemInfo` | **12/12 comprobaciones aprobadas**, salida de error vacía |
 | Edición en pseudoterminal | Tab completó pwd y una ruta entre comillas con espacios; flecha arriba recuperó una orden; clear, temas, orden larga y Ctrl+Z funcionaron |
 | Ctrl+C en pseudoterminal | Canceló `Start-Sleep -Seconds 30`, mostró código 130 y permitió ejecutar otra orden |
@@ -24,7 +24,8 @@ La pseudoterminal comprueba comportamiento de entrada/salida. No es una captura 
 - Jobs: búsqueda inexistente, espera real de una tubería, código de salida y terminación por `%id`.
 - Ejecución: contenido real de archivos de salida, anexado, stdin, tablas, tres etapas, consumidor que cierra antes, comando posterior inexistente y cancelación con comprobación de finalización del PID.
 - Sesiones de aplicación: EOF sin `exit`, código de salida, errores recuperables, ayuda legible, scripts con ubicación y conservación del fallo, ciclos de scripts.
-- Listados y procesos: tamaño y fecha, filtro sin resultados y rechazo de opciones inválidas.
+- Listados y procesos: tamaño con unidad y fecha de 12 horas, filtro sin resultados y rechazo de opciones inválidas.
+- Salida y control: formatos de tamaño, fecha y duración, encabezado `Path` de `pwd`, mensajes de redirección (creado, añadido, reemplazado y error), `rm`/`rmdir` con comodines, protecciones y confirmación, ayuda completa con ejemplos para cada comando, `version` con el equipo, y `suspend`/`resume` sobre un proceso real.
 
 Se desactiva la ejecución paralela de este proyecto de pruebas porque algunos casos utilizan `Console.In` y el contexto de consola del mismo proceso.
 
