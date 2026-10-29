@@ -1,5 +1,4 @@
 using MiShell.Core.Contracts;
-using MiShell.Core.Execution;
 
 namespace MiShell.Commands.BuiltinCommands;
 
@@ -23,11 +22,11 @@ public sealed class HistoryCommand(IOutputRenderer renderer) : IBuiltinCommand
                 indexes = indexes.Skip(Math.Max(0, history.Count - last));
                 break;
             case > 0:
-            {
-                var text = string.Join(' ', arguments);
-                indexes = indexes.Where(i => history[i].Contains(text, StringComparison.OrdinalIgnoreCase));
-                break;
-            }
+                {
+                    var text = string.Join(' ', arguments);
+                    indexes = indexes.Where(i => history[i].Contains(text, StringComparison.OrdinalIgnoreCase));
+                    break;
+                }
         }
 
         var shown = 0;

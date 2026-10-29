@@ -1,8 +1,6 @@
 using MiShell.Core.Contracts;
-using System.Globalization;
-using System.Text.RegularExpressions;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Files;
 
 /// <summary>Alias compatible con la consigna y con la consola clásica de Windows.</summary>
 public sealed class ClearCommand(IOutputRenderer renderer, string name) : IBuiltinCommand

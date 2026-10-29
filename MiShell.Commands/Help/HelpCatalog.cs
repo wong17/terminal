@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Help;
 
 /// <summary>
 /// Una fila de <c>help</c>: el nombre del comando en Linux y en Windows. Si <see cref="Windows"/> está vacío,

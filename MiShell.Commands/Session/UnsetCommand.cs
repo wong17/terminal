@@ -1,6 +1,4 @@
-using MiShell.Configuration;
 using MiShell.Core.Contracts;
-using MiShell.UI.Themes;
 
 namespace MiShell.Commands.BuiltinCommands;
 

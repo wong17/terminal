@@ -1,5 +1,4 @@
 using MiShell.Core;
-using MiShell.UI.Prompt;
 using Spectre.Console;
 using System.Text;
 using Console = System.Console;

@@ -100,7 +100,7 @@ public sealed class SysInfoCommand(
             {
                 using (cpu)
                 {
-                    #pragma warning disable CA1507 // "Name" es el nombre de la propiedad WMI, no el de esta clase.
+#pragma warning disable CA1507 // "Name" es el nombre de la propiedad WMI, no el de esta clase.
                     rows.Add(["Procesador", $"{cpu["Name"]}".Trim()]);
 #pragma warning restore CA1507
                     rows.Add(["Núcleos físicos / frecuencia", $"{cpu["NumberOfCores"]} / {cpu["MaxClockSpeed"]} MHz"]);

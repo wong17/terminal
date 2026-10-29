@@ -1,6 +1,4 @@
 using MiShell.Core.Contracts;
-using System.Diagnostics;
-using System.Globalization;
 
 namespace MiShell.Commands.BuiltinCommands;
 

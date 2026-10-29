@@ -1,6 +1,4 @@
 using MiShell.Core.Contracts;
-using System.Globalization;
-using System.Text.RegularExpressions;
 
 namespace MiShell.Commands.BuiltinCommands;
 

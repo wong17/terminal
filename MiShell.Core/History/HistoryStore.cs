@@ -61,7 +61,7 @@ public sealed class HistoryStore : IDisposable
         {
             return;
         }
-        
+
         var directory = Path.GetDirectoryName(_filePath);
         try
         {

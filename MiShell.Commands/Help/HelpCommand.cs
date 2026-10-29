@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Help;
 
 /// <summary>
 /// <c>help</c>: lista los comandos por grupos mostrando su nombre en Linux y en Windows, explica uno en detalle

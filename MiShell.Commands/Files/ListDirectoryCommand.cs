@@ -1,6 +1,4 @@
 using MiShell.Core.Contracts;
-using System.Globalization;
-using System.Text.RegularExpressions;
 
 namespace MiShell.Commands.BuiltinCommands;
 
@@ -74,7 +72,12 @@ public sealed class ListDirectoryCommand(IOutputRenderer renderer, string name) 
                 var flags = argument.StartsWith("--", StringComparison.Ordinal)
                     ? argument switch
                     {
-                        "--long" => "l", "--all" => "a", "--human" => "h", "--bytes" => "b", "--recurse" => "R", "--reverse" => "r",
+                        "--long" => "l",
+                        "--all" => "a",
+                        "--human" => "h",
+                        "--bytes" => "b",
+                        "--recurse" => "R",
+                        "--reverse" => "r",
                         _ => "?",
                     }
                     : argument[1..];

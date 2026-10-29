@@ -1,6 +1,6 @@
-using System.Text.RegularExpressions;
 using MiShell.UI.Prompt;
 using MiShell.UI.Themes;
+using System.Text.RegularExpressions;
 
 namespace MiShell.Core.Tests;
 
