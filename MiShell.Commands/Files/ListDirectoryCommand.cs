@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Files;
 
 /// <summary>
 /// Lista archivos y directorios con la información de <c>dir</c> y <c>Get-ChildItem</c>:
@@ -46,7 +46,8 @@ public sealed class ListDirectoryCommand(IOutputRenderer renderer, string name) 
             }
         }
 
-        if (!failed || totalFiles + totalDirs > 0)
+        if (failed && totalFiles + totalDirs <= 0)
+            return Task.FromResult(failed ? CommandResult.Failure : CommandResult.Ok);
         {
             var summary = $"{totalFiles} archivos ({(opts.Bytes ? MiShell.Core.ByteFormat.Exact(totalBytes) : FileFormat.Human(totalBytes))}) · {totalDirs} directorios";
             try

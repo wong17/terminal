@@ -2,7 +2,7 @@ using MiShell.Core.Contracts;
 using MiShell.Core.Execution;
 using MiShell.Core.Parsing;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Processes;
 
 /// <summary>
 /// <c>start</c>: lanza un programa externo en segundo plano y devuelve el prompt. Equivale a terminar la línea con <c>&amp;</c>;

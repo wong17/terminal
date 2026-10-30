@@ -2,7 +2,7 @@ using MiShell.Configuration;
 using MiShell.Core.Contracts;
 using MiShell.UI.Themes;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Session;
 
 /// <summary><c>theme</c>: cambia (y guarda) el tema de colores, o lista los temas disponibles.</summary>
 public sealed class ThemeCommand(IOutputRenderer renderer, ThemeManager themeManager, ShellSettings settings) : IBuiltinCommand

@@ -3,7 +3,7 @@ using MiShell.Core.Jobs;
 using System.ComponentModel;
 using System.Diagnostics;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Processes;
 
 /// <summary>
 /// <c>suspend</c> y <c>resume</c>: pausan y reanudan un proceso (por PID) o un trabajo (<c>%id</c>) sin terminarlo,

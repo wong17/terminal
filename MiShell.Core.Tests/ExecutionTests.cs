@@ -6,6 +6,9 @@ using MiShell.Core.Parsing;
 using MiShell.UI.Rendering;
 using MiShell.UI.Themes;
 using System.Diagnostics;
+using MiShell.Commands.Files;
+using MiShell.Commands.Processes;
+using MiShell.Commands.Session;
 
 namespace MiShell.Core.Tests;
 

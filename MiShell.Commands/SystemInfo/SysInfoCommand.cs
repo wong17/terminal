@@ -2,7 +2,7 @@ using MiShell.Core.Contracts;
 using System.Diagnostics;
 using System.Globalization;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.SystemInfo;
 
 /// <summary><c>sysinfo</c>: panel de CPU, RAM y disco más información del equipo, procesador, arranque y unidades (equivale a systeminfo).</summary>
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]

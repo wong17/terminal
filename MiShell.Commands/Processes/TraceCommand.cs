@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Processes;
 
 /// <summary>Activa o desactiva el seguimiento de la creación y espera de procesos.</summary>
 public sealed class TraceCommand(IOutputRenderer renderer) : IBuiltinCommand

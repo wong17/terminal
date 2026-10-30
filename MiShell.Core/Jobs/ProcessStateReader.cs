@@ -26,8 +26,14 @@ public static class ProcessStateReader
             foreach (ProcessThread thread in threads)
             {
                 var state = thread.ThreadState;
-                if (state is System.Diagnostics.ThreadState.Running or System.Diagnostics.ThreadState.Ready or System.Diagnostics.ThreadState.Standby) return Running;
-                if (state == System.Diagnostics.ThreadState.Wait && thread.WaitReason == ThreadWaitReason.Suspended) suspended++;
+                switch (state)
+                {
+                    case System.Diagnostics.ThreadState.Running or System.Diagnostics.ThreadState.Ready or System.Diagnostics.ThreadState.Standby:
+                        return Running;
+                    case System.Diagnostics.ThreadState.Wait when thread.WaitReason == ThreadWaitReason.Suspended:
+                        suspended++;
+                        break;
+                }
             }
 
             return suspended == threads.Count ? Suspended : Waiting;

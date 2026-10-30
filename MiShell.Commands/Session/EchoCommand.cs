@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Session;
 
 /// <summary><c>echo</c>: imprime sus argumentos; <c>-n</c> omite el salto de línea y <c>-e</c> interpreta secuencias de escape.</summary>
 public sealed class EchoCommand(IOutputRenderer renderer) : IBuiltinCommand

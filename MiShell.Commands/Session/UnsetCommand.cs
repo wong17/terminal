@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Session;
 
 /// <summary>Elimina variables de entorno de la sesión (Remove-Item Env:NOMBRE).</summary>
 public sealed class UnsetCommand(IOutputRenderer renderer, IShellEnvironment environment) : IBuiltinCommand

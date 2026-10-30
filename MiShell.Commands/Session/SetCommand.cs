@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Session;
 
 /// <summary><c>set</c>: lista variables de entorno, las filtra por prefijo (como cmd) o define una indicando su valor anterior.</summary>
 public sealed class SetCommand(IOutputRenderer renderer, IShellEnvironment environment) : IBuiltinCommand

@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Navigation;
 
 /// <summary>Cambia de directorio: ruta, ~, .., cd - (anterior) y cd /d para cambiar de unidad, como cmd.</summary>
 public sealed class CdCommand(IOutputRenderer renderer) : IBuiltinCommand

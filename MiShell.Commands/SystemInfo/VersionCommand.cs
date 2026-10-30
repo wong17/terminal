@@ -1,7 +1,7 @@
 using MiShell.Core.Contracts;
 using System.Runtime.InteropServices;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.SystemInfo;
 
 /// <summary><c>version</c>: versión de MiShell, del runtime de .NET y del sistema, con el equipo de desarrollo y la asignatura.</summary>
 public sealed class VersionCommand(IOutputRenderer renderer) : IBuiltinCommand

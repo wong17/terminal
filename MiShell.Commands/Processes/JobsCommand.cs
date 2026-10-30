@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Processes;
 
 /// <summary><c>jobs</c>: lista los trabajos en segundo plano con PID, estado, resultado, inicio, duración y comando.</summary>
 public sealed class JobsCommand(IOutputRenderer renderer) : IBuiltinCommand

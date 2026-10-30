@@ -79,12 +79,10 @@ public sealed class ShellExecutor(
         try
         {
             // Un fallo al abrir stdin no debe truncar stdout.
-            await using (var writer = output is null ? null : new StreamWriter(OpenOutput(output)))
-            {
-                using var redirect = writer is null ? null : renderer.RedirectOutput(writer);
-                if (reader is not null) Console.SetIn(reader);
-                code = (await builtin.ExecuteAsync([.. first.Arguments], state, cancellationToken).ConfigureAwait(false)).ExitCode;
-            }
+            await using var writer = output is null ? null : new StreamWriter(OpenOutput(output));
+            using var redirect = writer is null ? null : renderer.RedirectOutput(writer);
+            if (reader is not null) Console.SetIn(reader);
+            code = (await builtin.ExecuteAsync([.. first.Arguments], state, cancellationToken).ConfigureAwait(false)).ExitCode;
         }
         finally { Console.SetIn(originalInput); }
 
@@ -147,7 +145,7 @@ public sealed class ShellExecutor(
         foreach (var command in commands.Skip(1))
             _ = resolver.Resolve(command.Executable) ?? throw new CommandNotFoundException(command.Executable);
 
-        using var capture = new StringWriter();
+        await using var capture = new StringWriter();
         var originalInput = Console.In;
         using var reader = input is null ? null : new StreamReader(Path.GetFullPath(input.Path, state.WorkingDirectory));
         int code;

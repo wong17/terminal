@@ -1,4 +1,5 @@
-using MiShell.Commands.BuiltinCommands;
+using MiShell.Commands.Processes;
+using MiShell.Commands.SystemInfo;
 using MiShell.Core.Contracts;
 using MiShell.UI.Input;
 
@@ -26,7 +27,7 @@ public sealed class ClosureTests
         await using var f = new ExecutionFixture();
         var path = f.FilePath("output.txt");
         await File.WriteAllTextAsync(path, "preserve");
-        using (var locked = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+        await using (var locked = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
             await Assert.ThrowsAsync<MiShell.Core.Execution.RedirectionException>(() => f.Run("cmd.exe /c echo hello > output.txt"));
         Assert.Equal("preserve", await File.ReadAllTextAsync(path));
     }
@@ -41,7 +42,7 @@ public sealed class ClosureTests
         Assert.All(job.Processes, p => Assert.True(p.HasExited));
         Assert.Equal("fallido", job.Status);
         Assert.Contains("simulado", job.Detail);
-        var result = await new FgCommand(f.Renderer).ExecuteAsync(["1"], f.State, default);
+        var result = await new FgCommand(f.Renderer).ExecuteAsync(["1"], f.State, CancellationToken.None);
         Assert.Equal(1, result.ExitCode);
         Assert.Empty(f.Jobs.Jobs);
     }

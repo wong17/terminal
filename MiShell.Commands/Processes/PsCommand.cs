@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Processes;
 
 /// <summary>
 /// <c>ps</c>: lista todos los procesos que Windows permite leer (PID, estado, hilos, CPU, memoria con unidad, inicio) y con

@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Files;
 
 /// <summary>Muestra uno o varios archivos de texto (como type, cat y Get-Content).</summary>
 public sealed class ReadFileCommand(IOutputRenderer renderer, string name) : IBuiltinCommand

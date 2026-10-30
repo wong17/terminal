@@ -2,7 +2,7 @@ using MiShell.Configuration;
 using MiShell.Core.Contracts;
 using MiShell.UI.Rendering;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Session;
 
 /// <summary>
 /// <c>format</c>: elige cómo se dibujan las tablas y listas. <c>classic</c> imita a dir y Get-ChildItem

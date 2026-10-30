@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Session;
 
 /// <summary><c>history</c>: muestra el historial numerado, las últimas N entradas o las que contengan un texto.</summary>
 public sealed class HistoryCommand(IOutputRenderer renderer) : IBuiltinCommand

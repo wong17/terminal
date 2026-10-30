@@ -65,7 +65,7 @@ public sealed class Shell(
 
             history.Add(input.Trim());
 
-            // En una terminal interactiva la salida se separa con una línea en blanco de la orden y del siguiente prompt.
+            // La salida se separa con una línea en blanco de la orden y del siguiente prompt.
             var spaced = !Console.IsInputRedirected;
             if (spaced) renderer.WriteLine();
 

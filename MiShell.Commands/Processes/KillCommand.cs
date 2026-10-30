@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Processes;
 
 /// <summary><c>kill</c>: termina trabajos (%id) o procesos (PID) con todo su árbol; acepta varios objetivos.</summary>
 public sealed class KillCommand(IOutputRenderer renderer) : IBuiltinCommand

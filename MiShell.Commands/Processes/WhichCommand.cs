@@ -1,7 +1,7 @@
 using MiShell.Core.Contracts;
 using MiShell.Core.Execution;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Processes;
 
 /// <summary>Localiza comandos como Get-Command / where: tipo, versión, tamaño y origen.</summary>
 public sealed class WhichCommand(IOutputRenderer renderer, IExecutableResolver resolver, IServiceProvider services) : IBuiltinCommand

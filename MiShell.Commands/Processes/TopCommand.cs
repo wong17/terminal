@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Processes;
 
 /// <summary>
 /// <c>top</c>: monitor en vivo que se redibuja en la pantalla alternativa del terminal (como top o htop). Muestra la carga de
@@ -101,7 +101,7 @@ public sealed class TopCommand(IOutputRenderer renderer) : IBuiltinCommand
                     var snapshot = Sample(cpuCounter, freeRam, coreCounters, 0.3);
                     var frame = pid is { } one ? BuildProcessFrame(one, snapshot, new View(), 100, 40) : BuildFrame(snapshot, new View(), 100, count ?? 15);
                     foreach (var line in frame) renderer.WriteLine(line);
-                    return pid is { } && !ProcessAlive(pid.Value) ? CommandResult.Failure : CommandResult.Ok;
+                    return pid is not null && !ProcessAlive(pid.Value) ? CommandResult.Failure : CommandResult.Ok;
                 }
 
                 await RunLiveAsync(cpuCounter, freeRam, coreCounters, count, every, pid, cancellationToken).ConfigureAwait(false);

@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.SystemInfo;
 
 /// <summary><c>time</c>: fecha y hora local con zona horaria, UTC, ISO 8601, semana, marca Unix y tiempo encendido.</summary>
 public sealed class TimeCommand(IOutputRenderer renderer) : IBuiltinCommand

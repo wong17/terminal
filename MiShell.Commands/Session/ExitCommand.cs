@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Session;
 
 /// <summary><c>exit</c>: pide terminar el ciclo principal con un código de salida entre 0 y 255.</summary>
 public sealed class ExitCommand : IBuiltinCommand

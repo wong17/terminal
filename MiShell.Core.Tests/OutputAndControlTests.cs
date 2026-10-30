@@ -1,4 +1,5 @@
 using MiShell.Commands.BuiltinCommands;
+using MiShell.Commands.Files;
 using MiShell.Commands.Help;
 using MiShell.Core.Contracts;
 using MiShell.Core.Execution;

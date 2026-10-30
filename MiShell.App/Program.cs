@@ -1,6 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using MiShell.App;
 using MiShell.Commands.BuiltinCommands;
+using MiShell.Commands.Files;
+using MiShell.Commands.Help;
+using MiShell.Commands.Navigation;
+using MiShell.Commands.Processes;
+using MiShell.Commands.Session;
+using MiShell.Commands.SystemInfo;
 using MiShell.Configuration;
 using MiShell.Core.Contracts;
 using MiShell.Core.Environment;

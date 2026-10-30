@@ -1,7 +1,7 @@
 using MiShell.Core.Contracts;
 using MiShell.Core.Jobs;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Processes;
 
 /// <summary><c>fg</c>: trae un trabajo en segundo plano al primer plano esperando sus procesos y copias de flujos; devuelve el código de su última etapa.</summary>
 public sealed class FgCommand(IOutputRenderer renderer) : IBuiltinCommand

@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Files;
 
 /// <summary>Formatos compartidos por los comandos de archivos.</summary>
 internal static class FileFormat

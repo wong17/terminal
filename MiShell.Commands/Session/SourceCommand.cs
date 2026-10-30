@@ -3,7 +3,7 @@ using MiShell.Core.Execution;
 using MiShell.Core.Parsing;
 using System.ComponentModel;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Session;
 
 /// <summary>Scripts por líneas; conservan el contexto y señalan archivo/línea al fallar.</summary>
 public sealed class SourceCommand(IOutputRenderer renderer, IServiceProvider services) : IBuiltinCommand

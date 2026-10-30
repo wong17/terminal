@@ -1,7 +1,7 @@
 using MiShell.Core;
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Files;
 
 /// <summary>
 /// Elimina archivos y carpetas con los nombres de Linux y de Windows: <c>rm</c>, <c>del</c>/<c>erase</c> (archivos y patrones)
@@ -29,7 +29,7 @@ public sealed class RemoveCommand(IOutputRenderer renderer, string name) : IBuil
         var targets = new List<string>();
         foreach (var argument in arguments)
         {
-            if (argument.Length == 2 && argument[0] == '/' && "sSqQ".Contains(argument[1]))
+            if (argument is ['/', _] && "sSqQ".Contains(argument[1]))
             {
                 if (char.ToLowerInvariant(argument[1]) == 's') recursive = true; else force = true;
             }

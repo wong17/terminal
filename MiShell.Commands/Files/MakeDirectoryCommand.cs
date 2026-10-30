@@ -1,6 +1,6 @@
 using MiShell.Core.Contracts;
 
-namespace MiShell.Commands.BuiltinCommands;
+namespace MiShell.Commands.Files;
 
 /// <summary>Crea uno o varios directorios (con padres, como mkdir -p y como mkdir de Windows) y muestra lo creado.</summary>
 public sealed class MakeDirectoryCommand(IOutputRenderer renderer, string name = "mkdir") : IBuiltinCommand

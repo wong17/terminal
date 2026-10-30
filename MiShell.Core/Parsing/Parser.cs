@@ -60,7 +60,7 @@ public sealed class Parser(IShellEnvironment environment)
             while (index < tokens.Count)
             {
                 var token = tokens[index];
-                if (token.IsOperator && token.Text is "|" or "&&" or "||" or "&") break;
+                if (token is { IsOperator: true, Text: "|" or "&&" or "||" or "&" }) break;
                 index++;
                 if (token.IsOperator)
                 {
